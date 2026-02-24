@@ -180,7 +180,12 @@
 
   {
     "fn": "insert",
-    "anchor": "let z = this.tree.makeNode(key);",
+    "anchor": "this.logStep({key});",
+    "annotation": { "msg": "Begin inserting key ${key}" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "let z = this.trackPointer(\"z\", this.tree.makeNode(key));",
     "annotation": { "msg": "Create a new node with key ${key}" }
   },
   {
@@ -190,24 +195,8 @@
   },
   {
     "fn": "insert",
-    "anchor": "let x = this.tree.root;",
+    "anchor": "let x = this.trackPointer(\"x\", this.tree.root);",
     "annotation": { "msg": "Start x at the root" }
-  },
-  {
-    "fn": "insert",
-    "anchor": "this.logStep({key});",
-    "annotation": { "msg": "Begin inserting key ${key}" }
-  },
-  {
-    "fn": "insert",
-    "anchor": "this.trackPointer(\"z\", z);",
-    "annotation": { "msg": "Track z = new node ${z.key}" }
-  },
-  {
-    "fn": "insert",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 0,
-    "annotation": { "msg": "Track x = ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "insert",
@@ -216,13 +205,8 @@
   },
   {
     "fn": "insert",
-    "anchor": "y = x;",
+    "anchor": "y = this.trackPointer(\"y\", x);",
     "annotation": { "msg": "Save current x as y (trailing parent)" }
-  },
-  {
-    "fn": "insert",
-    "anchor": "this.trackPointer(\"y\", y);",
-    "annotation": { "msg": "y = ${y.key} (parent candidate)" }
   },
   {
     "fn": "insert",
@@ -231,7 +215,7 @@
   },
   {
     "fn": "insert",
-    "anchor": "x = x.left;",
+    "anchor": "x = this.trackPointer(\"x\", x.left);",
     "annotation": { "msg": "Move x to its left child" }
   },
   {
@@ -241,14 +225,8 @@
   },
   {
     "fn": "insert",
-    "anchor": "x = x.right;",
+    "anchor": "x = this.trackPointer(\"x\", x.right);",
     "annotation": { "msg": "Move x to its right child" }
-  },
-  {
-    "fn": "insert",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 1,
-    "annotation": { "msg": "x = ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "insert",
@@ -293,14 +271,8 @@
   },
   {
     "fn": "insertFixup",
-    "anchor": "let uncle = z.parent.parent.right;",
+    "anchor": "let uncle = this.trackPointer(\"uncle\", z.parent.parent.right);",
     "annotation": { "msg": "Get uncle (grandparent's right child)" }
-  },
-  {
-    "fn": "insertFixup",
-    "anchor": "this.trackPointer(\"uncle\", uncle);",
-    "occurrence": 0,
-    "annotation": { "msg": "uncle = ${uncle.isNil ? 'NIL' : uncle.key}" }
   },
   {
     "fn": "insertFixup",
@@ -328,15 +300,9 @@
   },
   {
     "fn": "insertFixup",
-    "anchor": "z = z.parent.parent;",
+    "anchor": "z = this.trackPointer(\"z\", z.parent.parent);",
     "occurrence": 0,
     "annotation": { "msg": "Move z up to its grandparent (Case 1)" }
-  },
-  {
-    "fn": "insertFixup",
-    "anchor": "this.trackPointer(\"z\", z);",
-    "occurrence": 0,
-    "annotation": { "msg": "z moves up to ${z.key}" }
   },
   {
     "fn": "insertFixup",
@@ -351,15 +317,9 @@
   },
   {
     "fn": "insertFixup",
-    "anchor": "z = z.parent;",
+    "anchor": "z = this.trackPointer(\"z\", z.parent);",
     "occurrence": 0,
     "annotation": { "msg": "Move z to its parent (Case 2)" }
-  },
-  {
-    "fn": "insertFixup",
-    "anchor": "this.trackPointer(\"z\", z);",
-    "occurrence": 1,
-    "annotation": { "msg": "z = ${z.key} (moved to parent for Case 2)" }
   },
   {
     "fn": "insertFixup",
@@ -391,14 +351,8 @@
   },
   {
     "fn": "insertFixup",
-    "anchor": "let uncle = z.parent.parent.left;",
+    "anchor": "let uncle = this.trackPointer(\"uncle\", z.parent.parent.left);",
     "annotation": { "msg": "Get uncle (grandparent's left child)" }
-  },
-  {
-    "fn": "insertFixup",
-    "anchor": "this.trackPointer(\"uncle\", uncle);",
-    "occurrence": 1,
-    "annotation": { "msg": "uncle = ${uncle.isNil ? 'NIL' : uncle.key}" }
   },
   {
     "fn": "insertFixup",
@@ -426,15 +380,9 @@
   },
   {
     "fn": "insertFixup",
-    "anchor": "z = z.parent.parent;",
+    "anchor": "z = this.trackPointer(\"z\", z.parent.parent);",
     "occurrence": 1,
     "annotation": { "msg": "Move z up to its grandparent (Case 1)" }
-  },
-  {
-    "fn": "insertFixup",
-    "anchor": "this.trackPointer(\"z\", z);",
-    "occurrence": 2,
-    "annotation": { "msg": "z moves up to ${z.key}" }
   },
   {
     "fn": "insertFixup",
@@ -449,15 +397,9 @@
   },
   {
     "fn": "insertFixup",
-    "anchor": "z = z.parent;",
+    "anchor": "z = this.trackPointer(\"z\", z.parent);",
     "occurrence": 1,
     "annotation": { "msg": "Move z to its parent (Case 2)" }
-  },
-  {
-    "fn": "insertFixup",
-    "anchor": "this.trackPointer(\"z\", z);",
-    "occurrence": 3,
-    "annotation": { "msg": "z = ${z.key} (moved to parent for Case 2)" }
   },
   {
     "fn": "insertFixup",
@@ -547,14 +489,8 @@
   },
   {
     "fn": "delete",
-    "anchor": "x = z.right;",
+    "anchor": "x = this.trackPointer(\"x\", z.right);",
     "annotation": { "msg": "x = z's right child" }
-  },
-  {
-    "fn": "delete",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 0,
-    "annotation": { "msg": "Track x = ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "delete",
@@ -568,14 +504,8 @@
   },
   {
     "fn": "delete",
-    "anchor": "x = z.left;",
+    "anchor": "x = this.trackPointer(\"x\", z.left);",
     "annotation": { "msg": "x = z's left child" }
-  },
-  {
-    "fn": "delete",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 1,
-    "annotation": { "msg": "Track x = ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "delete",
@@ -590,13 +520,8 @@
   },
   {
     "fn": "delete",
-    "anchor": "y = this.tree.minimum(z.right);",
+    "anchor": "y = this.trackPointer(\"y\", this.tree.minimum(z.right));",
     "annotation": { "msg": "Find z's in-order successor (minimum of right subtree)" }
-  },
-  {
-    "fn": "delete",
-    "anchor": "this.trackPointer(\"y\", y);",
-    "annotation": { "msg": "Track y = successor ${y.key}" }
   },
   {
     "fn": "delete",
@@ -605,14 +530,8 @@
   },
   {
     "fn": "delete",
-    "anchor": "x = y.right;",
+    "anchor": "x = this.trackPointer(\"x\", y.right);",
     "annotation": { "msg": "x = successor's right child" }
-  },
-  {
-    "fn": "delete",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 2,
-    "annotation": { "msg": "Track x = ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "delete",
@@ -719,14 +638,8 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "let w = x.parent.right;",
+    "anchor": "let w = this.trackPointer(\"w\", x.parent.right);",
     "annotation": { "msg": "Get sibling w (parent's right child)" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"w\", w);",
-    "occurrence": 0,
-    "annotation": { "msg": "Track w = ${w.isNil ? 'NIL' : w.key}" }
   },
   {
     "fn": "deleteFixup",
@@ -754,15 +667,9 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "w = x.parent.right;",
+    "anchor": "w = this.trackPointer(\"w\", x.parent.right);",
     "occurrence": 0,
     "annotation": { "msg": "Update w to new sibling after rotation" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"w\", w);",
-    "occurrence": 1,
-    "annotation": { "msg": "w updated to ${w.isNil ? 'NIL' : w.key} after rotation" }
   },
   {
     "fn": "deleteFixup",
@@ -777,15 +684,9 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "x = x.parent;",
+    "anchor": "x = this.trackPointer(\"x\", x.parent);",
     "occurrence": 0,
     "annotation": { "msg": "Case 2: move x up to parent" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 0,
-    "annotation": { "msg": "x moves up to ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "deleteFixup",
@@ -817,15 +718,9 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "w = x.parent.right;",
+    "anchor": "w = this.trackPointer(\"w\", x.parent.right);",
     "occurrence": 1,
     "annotation": { "msg": "Update w to new sibling after rotation" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"w\", w);",
-    "occurrence": 2,
-    "annotation": { "msg": "w updated to ${w.isNil ? 'NIL' : w.key} after rotation" }
   },
   {
     "fn": "deleteFixup",
@@ -853,15 +748,9 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "x = this.tree.root;",
+    "anchor": "x = this.trackPointer(\"x\", this.tree.root);",
     "occurrence": 0,
     "annotation": { "msg": "Set x to root (Case 4 — loop will end)" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 1,
-    "annotation": { "msg": "x = root (loop will exit)" }
   },
   {
     "fn": "deleteFixup",
@@ -871,14 +760,8 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "let w = x.parent.left;",
+    "anchor": "let w = this.trackPointer(\"w\", x.parent.left);",
     "annotation": { "msg": "Get sibling w (parent's left child)" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"w\", w);",
-    "occurrence": 3,
-    "annotation": { "msg": "Track w = ${w.isNil ? 'NIL' : w.key}" }
   },
   {
     "fn": "deleteFixup",
@@ -906,15 +789,9 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "w = x.parent.left;",
+    "anchor": "w = this.trackPointer(\"w\", x.parent.left);",
     "occurrence": 0,
     "annotation": { "msg": "Update w to new sibling after rotation" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"w\", w);",
-    "occurrence": 4,
-    "annotation": { "msg": "w updated to ${w.isNil ? 'NIL' : w.key} after rotation" }
   },
   {
     "fn": "deleteFixup",
@@ -929,15 +806,9 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "x = x.parent;",
+    "anchor": "x = this.trackPointer(\"x\", x.parent);",
     "occurrence": 1,
     "annotation": { "msg": "Case 2 (sym): move x up to parent" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 2,
-    "annotation": { "msg": "x moves up to ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "deleteFixup",
@@ -969,15 +840,9 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "w = x.parent.left;",
+    "anchor": "w = this.trackPointer(\"w\", x.parent.left);",
     "occurrence": 1,
     "annotation": { "msg": "Update w to new sibling after rotation" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"w\", w);",
-    "occurrence": 5,
-    "annotation": { "msg": "w updated to ${w.isNil ? 'NIL' : w.key} after rotation" }
   },
   {
     "fn": "deleteFixup",
@@ -1005,15 +870,9 @@
   },
   {
     "fn": "deleteFixup",
-    "anchor": "x = this.tree.root;",
+    "anchor": "x = this.trackPointer(\"x\", this.tree.root);",
     "occurrence": 1,
     "annotation": { "msg": "Set x to root (Case 4 — loop will end)" }
-  },
-  {
-    "fn": "deleteFixup",
-    "anchor": "this.trackPointer(\"x\", x);",
-    "occurrence": 3,
-    "annotation": { "msg": "x = root (loop will exit)" }
   },
   {
     "fn": "deleteFixup",

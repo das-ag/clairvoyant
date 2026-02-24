@@ -104,8 +104,10 @@ export default function RedBlackTreeDocs() {
                     <DocsFunction clazzName="RBTSolution" functionName="trackPointer" args={[
                         { name: "name", type: ConstDocString },
                         { name: "node", type: RBNodeType }
-                    ]}>
-                        <p>Highlights a node in the visualizer with a labeled pointer (e.g. &quot;z&quot;, &quot;x&quot;, &quot;uncle&quot;). The label appears above the node and is shown in the watch panel.</p>
+                    ]} returnType={RBNodeType}>
+                        <p>Highlights a node in the visualizer with a labeled pointer (e.g. &quot;z&quot;, &quot;x&quot;, &quot;uncle&quot;). The label appears above the node and is shown in the watch panel.
+                        Returns the <code>node</code> argument, so you can combine assignment and tracking in a single expression:</p>
+                        <pre className="bg-black/20 rounded p-2 mt-1 mb-1 text-sm overflow-x-auto"><code>{"let w = this.trackPointer(\"w\", x.parent.right);"}</code></pre>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="clearPointer" args={[
                         { name: "name", type: ConstDocString }

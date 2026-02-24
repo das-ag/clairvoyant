@@ -146,12 +146,13 @@ export class RBTSolutionBase {
         return n.isNil ? "NIL" : String(n.key);
     }
 
-    trackPointer(name: string, node: RBNode): void {
+    trackPointer(name: string, node: RBNode): RBNode {
         const line = getEvalCallerLine();
         const oldTarget = this.tree.pointers.get(name) ?? null;
         const cmd = new SetPointerCommand(name, oldTarget, node);
         cmd.execute(this.tree);
         this._pushStep(`${name} = ${this._nodeLabel(node)}`, cmd, false, line);
+        return node;
     }
 
     clearPointer(name: string): void {

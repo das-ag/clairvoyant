@@ -69,24 +69,19 @@ class RBTSolution {
     // ── RB-INSERT (CLRS 13.3) ───────────────────────────────────────
 
     insert(key) {
-        let z = this.tree.makeNode(key);
-        let y = this.tree.NIL;
-        let x = this.tree.root;
-
         this.logStep({key});
-        this.trackPointer("z", z);
-        this.trackPointer("x", x);
+        let z = this.trackPointer("z", this.tree.makeNode(key));
+        let y = this.tree.NIL;
+        let x = this.trackPointer("x", this.tree.root);
 
         // Walk down the tree to find the insertion point
         while (x !== this.tree.NIL) {
-            y = x;
-            this.trackPointer("y", y);
+            y = this.trackPointer("y", x);
             if (z.key < x.key) {
-                x = x.left;
+                x = this.trackPointer("x", x.left);
             } else {
-                x = x.right;
+                x = this.trackPointer("x", x.right);
             }
-            this.trackPointer("x", x);
         }
 
         // Insert z as a child of y
@@ -104,21 +99,18 @@ class RBTSolution {
     insertFixup(z) {
         while (z.parent.color === "RED") {
             if (z.parent === z.parent.parent.left) {
-                let uncle = z.parent.parent.right;
-                this.trackPointer("uncle", uncle);
+                let uncle = this.trackPointer("uncle", z.parent.parent.right);
 
                 if (uncle.color === "RED") {
                     // Case 1: uncle is red — recolor and move z up
                     this.recolor(z.parent, "BLACK");
                     this.recolor(uncle, "BLACK");
                     this.recolor(z.parent.parent, "RED");
-                    z = z.parent.parent;
-                    this.trackPointer("z", z);
+                    z = this.trackPointer("z", z.parent.parent);
                 } else {
                     if (z === z.parent.right) {
                         // Case 2: z is a right child — rotate to reduce to Case 3
-                        z = z.parent;
-                        this.trackPointer("z", z);
+                        z = this.trackPointer("z", z.parent);
                         this.leftRotate(z);
                     }
                     // Case 3: recolor and right-rotate
@@ -128,21 +120,18 @@ class RBTSolution {
                 }
             } else {
                 // Symmetric: z.parent is a right child
-                let uncle = z.parent.parent.left;
-                this.trackPointer("uncle", uncle);
+                let uncle = this.trackPointer("uncle", z.parent.parent.left);
 
                 if (uncle.color === "RED") {
                     // Case 1 (sym)
                     this.recolor(z.parent, "BLACK");
                     this.recolor(uncle, "BLACK");
                     this.recolor(z.parent.parent, "RED");
-                    z = z.parent.parent;
-                    this.trackPointer("z", z);
+                    z = this.trackPointer("z", z.parent.parent);
                 } else {
                     if (z === z.parent.left) {
                         // Case 2 (sym)
-                        z = z.parent;
-                        this.trackPointer("z", z);
+                        z = this.trackPointer("z", z.parent);
                         this.rightRotate(z);
                     }
                     // Case 3 (sym)
@@ -175,21 +164,17 @@ class RBTSolution {
 
         if (z.left === this.tree.NIL) {
             // No left child — replace z with its right child
-            x = z.right;
-            this.trackPointer("x", x);
+            x = this.trackPointer("x", z.right);
             this.transplant(z, z.right);
         } else if (z.right === this.tree.NIL) {
             // No right child — replace z with its left child
-            x = z.left;
-            this.trackPointer("x", x);
+            x = this.trackPointer("x", z.left);
             this.transplant(z, z.left);
         } else {
             // Two children — find in-order successor
-            y = this.tree.minimum(z.right);
-            this.trackPointer("y", y);
+            y = this.trackPointer("y", this.tree.minimum(z.right));
             yOriginalColor = y.color;
-            x = y.right;
-            this.trackPointer("x", x);
+            x = this.trackPointer("x", y.right);
 
             if (y.parent === z) {
                 this.linkParent(x, y);
@@ -222,75 +207,65 @@ class RBTSolution {
     deleteFixup(x) {
         while (x !== this.tree.root && x.color === "BLACK") {
             if (x === x.parent.left) {
-                let w = x.parent.right;
-                this.trackPointer("w", w);
+                let w = this.trackPointer("w", x.parent.right);
 
                 if (w.color === "RED") {
                     // Case 1: sibling w is red
                     this.recolor(w, "BLACK");
                     this.recolor(x.parent, "RED");
                     this.leftRotate(x.parent);
-                    w = x.parent.right;
-                    this.trackPointer("w", w);
+                    w = this.trackPointer("w", x.parent.right);
                 }
 
                 if (w.left.color === "BLACK" && w.right.color === "BLACK") {
                     // Case 2: both of w's children are black
                     this.recolor(w, "RED");
-                    x = x.parent;
-                    this.trackPointer("x", x);
+                    x = this.trackPointer("x", x.parent);
                 } else {
                     if (w.right.color === "BLACK") {
                         // Case 3: w.right is black — rotate to set up Case 4
                         this.recolor(w.left, "BLACK");
                         this.recolor(w, "RED");
                         this.rightRotate(w);
-                        w = x.parent.right;
-                        this.trackPointer("w", w);
+                        w = this.trackPointer("w", x.parent.right);
                     }
                     // Case 4: w.right is red — final fix
                     this.recolor(w, x.parent.color);
                     this.recolor(x.parent, "BLACK");
                     this.recolor(w.right, "BLACK");
                     this.leftRotate(x.parent);
-                    x = this.tree.root;
-                    this.trackPointer("x", x);
+                    x = this.trackPointer("x", this.tree.root);
                 }
             } else {
                 // Symmetric: x is a right child
-                let w = x.parent.left;
-                this.trackPointer("w", w);
+                let w = this.trackPointer("w", x.parent.left);
 
                 if (w.color === "RED") {
                     // Case 1 (sym)
                     this.recolor(w, "BLACK");
                     this.recolor(x.parent, "RED");
                     this.rightRotate(x.parent);
-                    w = x.parent.left;
-                    this.trackPointer("w", w);
+                    w = this.trackPointer("w", x.parent.left);
                 }
 
                 if (w.right.color === "BLACK" && w.left.color === "BLACK") {
                     // Case 2 (sym)
                     this.recolor(w, "RED");
-                    x = x.parent;
-                    this.trackPointer("x", x);
+                    x = this.trackPointer("x", x.parent);
                 } else {
                     if (w.left.color === "BLACK") {
                         // Case 3 (sym)
                         this.recolor(w.right, "BLACK");
                         this.recolor(w, "RED");
                         this.leftRotate(w);
-                        w = x.parent.left;
-                        this.trackPointer("w", w);
+                        w = this.trackPointer("w", x.parent.left);
                     }
                     // Case 4 (sym)
                     this.recolor(w, x.parent.color);
                     this.recolor(x.parent, "BLACK");
                     this.recolor(w.left, "BLACK");
                     this.rightRotate(x.parent);
-                    x = this.tree.root;
-                    this.trackPointer("x", x);
+                    x = this.trackPointer("x", this.tree.root);
                 }
             }
         }
