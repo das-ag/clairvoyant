@@ -1,27 +1,41 @@
-import { getSolution, getSolutions } from "@/lib/api/problems";
+import { getAnnotations, getSolution, getSolutions } from "@/lib/api/problems";
 import { buttonStyleClassNames, highlights, themes } from "@/lib/statics/styleConstants";
-import { capitalize, formatPrettyFile } from "@/lib/strings/pretty";
+import { formatPrettyFile } from "@/lib/strings/pretty";
 import { useCallback, useEffect, useState } from "react";
 import Select from "react-select";
-import ReactCodeMirror, { EditorView, Extension } from "@uiw/react-codemirror";
+import { EditorView, Extension } from "@uiw/react-codemirror";
 import { syntaxHighlighting } from "@codemirror/language"
 import Image from "next/image";
 import { javascript } from "@codemirror/lang-javascript";
 import CodeView from "./codeView";
-
-// Then register the languages you need
+import type { ResolvedAnnotationMap, LineAnnotation, AnnotationEntry } from "@/lib/rbt/rbtAnnotations";
 
 const init_defaultAlgos: string[] = []
 
 const js = javascript();
 
-export default function SolutionEditor({problem, errorMessage, solutionHeight, runner, onSolutionChanged: onSolutionChanged, activeLine}: {
+export default function SolutionEditor({
+    problem,
+    errorMessage,
+    solutionHeight,
+    runner,
+    onSolutionChanged,
+    onAnnotationsLoaded,
+    activeLine,
+    annotations,
+    defaultAnnotations,
+    onAnnotationEdit,
+}: {
     problem: string,
     errorMessage: string,
     solutionHeight: number,
     runner: () => void,
     onSolutionChanged: (v: string) => void,
-    activeLine?: number | null
+    onAnnotationsLoaded?: (entries: AnnotationEntry[]) => void,
+    activeLine?: number | null,
+    annotations?: ResolvedAnnotationMap,
+    defaultAnnotations?: ResolvedAnnotationMap,
+    onAnnotationEdit?: (line: number, annotation: LineAnnotation | null) => void,
 }) {
     let [algoData, setAlgoData] = useState("");
     let [algoId, setAlgoId] = useState("");
@@ -35,12 +49,14 @@ export default function SolutionEditor({problem, errorMessage, solutionHeight, r
         onSolutionChanged(value);
     }, [onSolutionChanged])
 
-    const fetchAlgorithm = useCallback((forProblem: string, forAlgoId: string) => {
-        getSolution(forProblem, forAlgoId)
-        .then(responseCaseData => {
-            setSolution(responseCaseData);
-        })
-    }, [setSolution])
+    const fetchAlgorithm = useCallback(async (forProblem: string, forAlgoId: string) => {
+        const [code, entries] = await Promise.all([
+            getSolution(forProblem, forAlgoId),
+            getAnnotations(forProblem, forAlgoId),
+        ]);
+        setSolution(code);
+        if (onAnnotationsLoaded) onAnnotationsLoaded(entries as AnnotationEntry[]);
+    }, [setSolution, onAnnotationsLoaded])
 
     function toggleTheme() {
         const allThemes = Object.keys(themes);
@@ -85,8 +101,17 @@ export default function SolutionEditor({problem, errorMessage, solutionHeight, r
             </a>
         </div>
         <div className="flex-grow flex">
-            <CodeView style={{height: `${solutionHeight}px`}} lang="javascript" extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]} value={algoData} onChange={e => setSolution(e ?? "")} activeLine={activeLine}>
-            </CodeView>
+            <CodeView
+                style={{height: `${solutionHeight}px`}}
+                lang="javascript"
+                extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]}
+                value={algoData}
+                onChange={e => setSolution(e ?? "")}
+                activeLine={activeLine}
+                annotations={annotations}
+                defaultAnnotations={defaultAnnotations}
+                onAnnotationEdit={onAnnotationEdit}
+            />
         </div>
         {errorMessage ? (<div className="bg-opacity-50 max-h-32 overflow-y-auto border p-1 mt-1 border-solid rounded-md border-danger-500 bg-danger-100 dark:bg-danger-900 text-danger-800 dark:text-danger-200">
             {errorMessage}

@@ -8,11 +8,20 @@ import WatchPanel, { WatchEntry } from "@/app/components/controls/watchPanel";
 import RBTView from "./components/rbtView";
 import { RBTree } from "@/lib/rbt/rbtree";
 import { RBTStep, RBTSolutionBase, buildRBTSolution } from "@/lib/rbt/rbtSolution";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ensureError } from "@/lib/errors/error";
 import { HDivider, VDivider } from "@/app/components/divider";
 import { toast } from "react-toastify";
 import { buttonStyleClassNames } from "@/lib/statics/styleConstants";
+import {
+    AnnotationEntry,
+    LineAnnotation,
+    ResolvedAnnotationMap,
+    BranchScopeMap,
+    resolveAnnotations,
+    unresolveAnnotation,
+    buildBranchScopeMap,
+} from "@/lib/rbt/rbtAnnotations";
 
 export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
@@ -33,6 +42,53 @@ export default function RedBlackTreePage() {
     stepIndexRef.current = stepIndex;
     let [insertValue, setInsertValue] = useState("");
     let [deleteValue, setDeleteValue] = useState("");
+
+    // ── Annotation state ─────────────────────────────────────────────
+
+    let [defaultAnnotationEntries, setDefaultAnnotationEntries] = useState<AnnotationEntry[]>([]);
+    let [annotationEntries, setAnnotationEntries] = useState<AnnotationEntry[]>([]);
+
+    const resolvedAnnotations: ResolvedAnnotationMap = useMemo(
+        () => resolveAnnotations(annotationEntries, algoData),
+        [annotationEntries, algoData],
+    );
+
+    const defaultResolvedAnnotations: ResolvedAnnotationMap = useMemo(
+        () => resolveAnnotations(defaultAnnotationEntries, algoData),
+        [defaultAnnotationEntries, algoData],
+    );
+
+    const branchScopeMap: BranchScopeMap = useMemo(
+        () => buildBranchScopeMap(algoData),
+        [algoData],
+    );
+
+    useEffect(() => {
+        if (solution) {
+            solution.setAnnotations(resolvedAnnotations);
+            solution.setBranchScopeMap(branchScopeMap);
+        }
+    }, [solution, resolvedAnnotations, branchScopeMap]);
+
+    const onAnnotationsLoaded = useCallback((entries: AnnotationEntry[]) => {
+        setDefaultAnnotationEntries(entries);
+        setAnnotationEntries(entries);
+    }, []);
+
+    const onAnnotationEdit = useCallback((line: number, annotation: LineAnnotation | null) => {
+        setAnnotationEntries(prev => {
+            const key = unresolveAnnotation(line, algoData);
+            if (!key) return prev;
+
+            const next = prev.filter(
+                e => !(e.fn === key.fn && e.anchor === key.anchor && (e.occurrence ?? 0) === key.occurrence),
+            );
+            if (annotation) {
+                next.push({ fn: key.fn, anchor: key.anchor, occurrence: key.occurrence, annotation });
+            }
+            return next;
+        });
+    }, [algoData]);
 
     // ── Derived state ───────────────────────────────────────────────
 
@@ -95,7 +151,7 @@ export default function RedBlackTreePage() {
         const newTree = new RBTree();
         let sol: RBTSolutionBase;
         try {
-            sol = buildRBTSolution(algoData, newTree);
+            sol = buildRBTSolution(algoData, newTree, resolvedAnnotations, branchScopeMap);
         } catch (err) {
             const error = ensureError(err);
             setAlgoErrorMessage(error.message);
@@ -219,9 +275,13 @@ export default function RedBlackTreePage() {
                         solutionHeight={solHeight}
                         problem="red-black-tree"
                         onSolutionChanged={onAlgoDataChanged}
+                        onAnnotationsLoaded={onAnnotationsLoaded}
                         runner={runBuild}
                         errorMessage={algoErrorMessage}
                         activeLine={activeLine}
+                        annotations={resolvedAnnotations}
+                        defaultAnnotations={defaultResolvedAnnotations}
+                        onAnnotationEdit={onAnnotationEdit}
                     />
                     <HDivider onWidthChangeRequest={(v) => setSolHeight(solHeight + v)} />
                     <CaseEditor
