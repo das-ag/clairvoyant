@@ -1,8 +1,34 @@
 [
   {
+    "fn": "constructor",
+    "anchor": "this.tree = tree;",
+    "annotation": { "msg": "Store reference to the tree" }
+  },
+
+  {
     "fn": "leftRotate",
     "anchor": "this.logStep({x});",
     "annotation": { "msg": "Left-rotate on ${x.key}" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "let y = x.right;",
+    "annotation": { "msg": "Save x's right child as y" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "this.linkRight(x, y.left);",
+    "annotation": { "msg": "Set x.right = y.left (give x y's left subtree)" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "this.linkParent(y.left, x);",
+    "annotation": { "msg": "Set y.left.parent = x" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "this.linkParent(y, x.parent);",
+    "annotation": { "msg": "Set y.parent = x.parent" }
   },
   {
     "fn": "leftRotate",
@@ -11,13 +37,38 @@
   },
   {
     "fn": "leftRotate",
+    "anchor": "this.setRoot(y);",
+    "annotation": { "msg": "Set y as the new root" }
+  },
+  {
+    "fn": "leftRotate",
     "anchor": "} else if (x === x.parent.left) {",
     "annotation": { "question": "Is the node the root?", "answer": "No — it is a left child" }
   },
   {
     "fn": "leftRotate",
+    "anchor": "this.linkLeft(x.parent, y);",
+    "annotation": { "msg": "Replace x with y as parent's left child" }
+  },
+  {
+    "fn": "leftRotate",
     "anchor": "} else {",
     "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "this.linkRight(x.parent, y);",
+    "annotation": { "msg": "Replace x with y as parent's right child" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "this.linkLeft(y, x);",
+    "annotation": { "msg": "Set y.left = x (x goes under y)" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "this.linkParent(x, y);",
+    "annotation": { "msg": "Set x.parent = y" }
   },
 
   {
@@ -27,8 +78,33 @@
   },
   {
     "fn": "rightRotate",
+    "anchor": "let x = y.left;",
+    "annotation": { "msg": "Save y's left child as x" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.linkLeft(y, x.right);",
+    "annotation": { "msg": "Set y.left = x.right (give y x's right subtree)" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.linkParent(x.right, y);",
+    "annotation": { "msg": "Set x.right.parent = y" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.linkParent(x, y.parent);",
+    "annotation": { "msg": "Set x.parent = y.parent" }
+  },
+  {
+    "fn": "rightRotate",
     "anchor": "if (y.parent === this.tree.NIL) {",
     "annotation": { "question": "Is the node the root?", "answer": "Yes — set new root" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.setRoot(x);",
+    "annotation": { "msg": "Set x as the new root" }
   },
   {
     "fn": "rightRotate",
@@ -37,8 +113,28 @@
   },
   {
     "fn": "rightRotate",
+    "anchor": "this.linkLeft(y.parent, x);",
+    "annotation": { "msg": "Replace y with x as parent's left child" }
+  },
+  {
+    "fn": "rightRotate",
     "anchor": "} else {",
     "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.linkRight(y.parent, x);",
+    "annotation": { "msg": "Replace y with x as parent's right child" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.linkRight(x, y);",
+    "annotation": { "msg": "Set x.right = y (y goes under x)" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.linkParent(y, x);",
+    "annotation": { "msg": "Set y.parent = x" }
   },
 
   {
@@ -53,19 +149,80 @@
   },
   {
     "fn": "transplant",
+    "anchor": "this.setRoot(v);",
+    "annotation": { "msg": "Set v as the new root" }
+  },
+  {
+    "fn": "transplant",
     "anchor": "} else if (u === u.parent.left) {",
     "annotation": { "question": "Is the node the root?", "answer": "No — it is a left child" }
+  },
+  {
+    "fn": "transplant",
+    "anchor": "this.linkLeft(u.parent, v);",
+    "annotation": { "msg": "Replace u with v as left child" }
   },
   {
     "fn": "transplant",
     "anchor": "} else {",
     "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
   },
+  {
+    "fn": "transplant",
+    "anchor": "this.linkRight(u.parent, v);",
+    "annotation": { "msg": "Replace u with v as right child" }
+  },
+  {
+    "fn": "transplant",
+    "anchor": "this.linkParent(v, u.parent);",
+    "annotation": { "msg": "Set v.parent = u.parent" }
+  },
 
+  {
+    "fn": "insert",
+    "anchor": "let z = this.tree.makeNode(key);",
+    "annotation": { "msg": "Create a new node with key ${key}" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "let y = this.tree.NIL;",
+    "annotation": { "msg": "Initialize y as NIL" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "let x = this.tree.root;",
+    "annotation": { "msg": "Start x at the root" }
+  },
   {
     "fn": "insert",
     "anchor": "this.logStep({key});",
     "annotation": { "msg": "Begin inserting key ${key}" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.trackPointer(\"z\", z);",
+    "annotation": { "msg": "Track z = new node ${z.key}" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 0,
+    "annotation": { "msg": "Track x = ${x.isNil ? 'NIL' : x.key}" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "while (x !== this.tree.NIL) {",
+    "annotation": { "msg": "Walk down the tree to find insertion point" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "y = x;",
+    "annotation": { "msg": "Save current x as y (trailing parent)" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.trackPointer(\"y\", y);",
+    "annotation": { "msg": "y = ${y.key} (parent candidate)" }
   },
   {
     "fn": "insert",
@@ -74,8 +231,49 @@
   },
   {
     "fn": "insert",
+    "anchor": "x = x.left;",
+    "annotation": { "msg": "Move x to its left child" }
+  },
+  {
+    "fn": "insert",
     "anchor": "} else {",
     "annotation": { "question": "Is ${z.key} < ${x.key}?", "answer": "No — explore right subtree" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "x = x.right;",
+    "annotation": { "msg": "Move x to its right child" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 1,
+    "annotation": { "msg": "x = ${x.isNil ? 'NIL' : x.key}" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.insertNode(z);",
+    "annotation": { "msg": "Insert node ${z.key} into the tree" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.recolor(z, \"RED\");",
+    "annotation": { "msg": "Color new node ${z.key} RED" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.clearPointer(\"x\");",
+    "annotation": { "msg": "Done tracking x" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.clearPointer(\"y\");",
+    "annotation": { "msg": "Done tracking y" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.insertFixup(z);",
+    "annotation": { "msg": "Begin fixup to restore RB properties" }
   },
   {
     "fn": "insert",
@@ -85,14 +283,60 @@
 
   {
     "fn": "insertFixup",
+    "anchor": "while (z.parent.color === \"RED\") {",
+    "annotation": { "msg": "Fixup while z's parent is RED (RB violation)" }
+  },
+  {
+    "fn": "insertFixup",
     "anchor": "if (z.parent === z.parent.parent.left) {",
     "annotation": { "question": "Is z.parent a left child?", "answer": "Yes" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "let uncle = z.parent.parent.right;",
+    "annotation": { "msg": "Get uncle (grandparent's right child)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.trackPointer(\"uncle\", uncle);",
+    "occurrence": 0,
+    "annotation": { "msg": "uncle = ${uncle.isNil ? 'NIL' : uncle.key}" }
   },
   {
     "fn": "insertFixup",
     "anchor": "if (uncle.color === \"RED\") {",
     "occurrence": 0,
     "annotation": { "question": "Is uncle RED?", "answer": "Yes — Case 1: recolor" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(z.parent, \"BLACK\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 1: color z.parent BLACK" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(uncle, \"BLACK\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 1: color uncle BLACK" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(z.parent.parent, \"RED\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 1: color grandparent RED" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "z = z.parent.parent;",
+    "occurrence": 0,
+    "annotation": { "msg": "Move z up to its grandparent (Case 1)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.trackPointer(\"z\", z);",
+    "occurrence": 0,
+    "annotation": { "msg": "z moves up to ${z.key}" }
   },
   {
     "fn": "insertFixup",
@@ -107,15 +351,90 @@
   },
   {
     "fn": "insertFixup",
+    "anchor": "z = z.parent;",
+    "occurrence": 0,
+    "annotation": { "msg": "Move z to its parent (Case 2)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.trackPointer(\"z\", z);",
+    "occurrence": 1,
+    "annotation": { "msg": "z = ${z.key} (moved to parent for Case 2)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.leftRotate(z);",
+    "annotation": { "msg": "Case 2: left-rotate z" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(z.parent, \"BLACK\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 3: color z.parent BLACK" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(z.parent.parent, \"RED\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 3: color grandparent RED" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.rightRotate(z.parent.parent);",
+    "annotation": { "msg": "Case 3: right-rotate grandparent" }
+  },
+  {
+    "fn": "insertFixup",
     "anchor": "} else {",
     "occurrence": 1,
     "annotation": { "question": "Is z.parent a left child?", "answer": "No — symmetric case" }
   },
   {
     "fn": "insertFixup",
+    "anchor": "let uncle = z.parent.parent.left;",
+    "annotation": { "msg": "Get uncle (grandparent's left child)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.trackPointer(\"uncle\", uncle);",
+    "occurrence": 1,
+    "annotation": { "msg": "uncle = ${uncle.isNil ? 'NIL' : uncle.key}" }
+  },
+  {
+    "fn": "insertFixup",
     "anchor": "if (uncle.color === \"RED\") {",
     "occurrence": 1,
     "annotation": { "question": "Is uncle RED?", "answer": "Yes — Case 1: recolor" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(z.parent, \"BLACK\");",
+    "occurrence": 2,
+    "annotation": { "msg": "Case 1 (sym): color z.parent BLACK" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(uncle, \"BLACK\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 1 (sym): color uncle BLACK" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(z.parent.parent, \"RED\");",
+    "occurrence": 2,
+    "annotation": { "msg": "Case 1 (sym): color grandparent RED" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "z = z.parent.parent;",
+    "occurrence": 1,
+    "annotation": { "msg": "Move z up to its grandparent (Case 1)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.trackPointer(\"z\", z);",
+    "occurrence": 2,
+    "annotation": { "msg": "z moves up to ${z.key}" }
   },
   {
     "fn": "insertFixup",
@@ -128,7 +447,61 @@
     "anchor": "if (z === z.parent.left) {",
     "annotation": { "question": "Is z a left child?", "answer": "Yes — Case 2: rotate to Case 3" }
   },
+  {
+    "fn": "insertFixup",
+    "anchor": "z = z.parent;",
+    "occurrence": 1,
+    "annotation": { "msg": "Move z to its parent (Case 2)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.trackPointer(\"z\", z);",
+    "occurrence": 3,
+    "annotation": { "msg": "z = ${z.key} (moved to parent for Case 2)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.rightRotate(z);",
+    "annotation": { "msg": "Case 2 (sym): right-rotate z" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(z.parent, \"BLACK\");",
+    "occurrence": 3,
+    "annotation": { "msg": "Case 3 (sym): color z.parent BLACK" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(z.parent.parent, \"RED\");",
+    "occurrence": 3,
+    "annotation": { "msg": "Case 3 (sym): color grandparent RED" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.leftRotate(z.parent.parent);",
+    "annotation": { "msg": "Case 3 (sym): left-rotate grandparent" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.recolor(this.tree.root, \"BLACK\");",
+    "annotation": { "msg": "Ensure root is BLACK" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.clearPointer(\"uncle\");",
+    "annotation": { "msg": "Done tracking uncle" }
+  },
 
+  {
+    "fn": "delete",
+    "anchor": "let z = this.tree.search(key);",
+    "annotation": { "msg": "Search for key ${key} in the tree" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "if (z === this.tree.NIL) {",
+    "annotation": { "question": "Was the key found?", "answer": "No — abort deletion" }
+  },
   {
     "fn": "delete",
     "anchor": "this.logStep({key});",
@@ -149,13 +522,65 @@
   },
   {
     "fn": "delete",
+    "anchor": "this.trackPointer(\"z\", z);",
+    "annotation": { "msg": "Track z = node ${z.key} to delete" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "let y = z;",
+    "annotation": { "msg": "Initialize y to the node being deleted" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "let yOriginalColor = y.color;",
+    "annotation": { "msg": "Save y's original color for fixup check" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "let x;",
+    "annotation": { "msg": "Declare x (will track the replacement node)" }
+  },
+  {
+    "fn": "delete",
     "anchor": "if (z.left === this.tree.NIL) {",
     "annotation": { "question": "Does z have a left child?", "answer": "No — replace with right child" }
   },
   {
     "fn": "delete",
+    "anchor": "x = z.right;",
+    "annotation": { "msg": "x = z's right child" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 0,
+    "annotation": { "msg": "Track x = ${x.isNil ? 'NIL' : x.key}" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.transplant(z, z.right);",
+    "annotation": { "msg": "Replace z with its right child" }
+  },
+  {
+    "fn": "delete",
     "anchor": "} else if (z.right === this.tree.NIL) {",
     "annotation": { "question": "Does z have a left child?", "answer": "Yes. Does z have a right child? No — replace with left child" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "x = z.left;",
+    "annotation": { "msg": "x = z's left child" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 1,
+    "annotation": { "msg": "Track x = ${x.isNil ? 'NIL' : x.key}" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.transplant(z, z.left);",
+    "annotation": { "msg": "Replace z with its left child" }
   },
   {
     "fn": "delete",
@@ -165,8 +590,39 @@
   },
   {
     "fn": "delete",
+    "anchor": "y = this.tree.minimum(z.right);",
+    "annotation": { "msg": "Find z's in-order successor (minimum of right subtree)" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.trackPointer(\"y\", y);",
+    "annotation": { "msg": "Track y = successor ${y.key}" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "yOriginalColor = y.color;",
+    "annotation": { "msg": "Save successor's original color" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "x = y.right;",
+    "annotation": { "msg": "x = successor's right child" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 2,
+    "annotation": { "msg": "Track x = ${x.isNil ? 'NIL' : x.key}" }
+  },
+  {
+    "fn": "delete",
     "anchor": "if (y.parent === z) {",
     "annotation": { "question": "Is successor a direct child of z?", "answer": "Yes — link x.parent to y" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.linkParent(x, y);",
+    "annotation": { "msg": "Set x.parent = y (keep parent link)" }
   },
   {
     "fn": "delete",
@@ -176,8 +632,73 @@
   },
   {
     "fn": "delete",
+    "anchor": "this.transplant(y, y.right);",
+    "annotation": { "msg": "Transplant successor y out of its position" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.linkRight(y, z.right);",
+    "annotation": { "msg": "Give y z's right subtree" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.linkParent(y.right, y);",
+    "annotation": { "msg": "Set y.right.parent = y" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.transplant(z, y);",
+    "annotation": { "msg": "Replace z with successor y" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.linkLeft(y, z.left);",
+    "annotation": { "msg": "Give y z's left subtree" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.linkParent(y.left, y);",
+    "annotation": { "msg": "Set y.left.parent = y" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.recolor(y, z.color);",
+    "annotation": { "msg": "Copy z's color to successor y" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.removeNode(z);",
+    "annotation": { "msg": "Remove node z from the tree" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.clearPointer(\"z\");",
+    "annotation": { "msg": "Done tracking z" }
+  },
+  {
+    "fn": "delete",
     "anchor": "if (yOriginalColor === \"BLACK\") {",
     "annotation": { "question": "Was the original color BLACK?", "answer": "Yes — fixup needed" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.deleteFixup(x);",
+    "annotation": { "msg": "Begin fixup to restore RB properties" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.clearPointer(\"x\");",
+    "annotation": { "msg": "Done tracking x" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.clearPointer(\"y\");",
+    "annotation": { "msg": "Done tracking y" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.clearPointer(\"w\");",
+    "annotation": { "msg": "Done tracking w" }
   },
   {
     "fn": "delete",
@@ -188,8 +709,24 @@
 
   {
     "fn": "deleteFixup",
+    "anchor": "while (x !== this.tree.root && x.color === \"BLACK\") {",
+    "annotation": { "msg": "Fixup while x is not root and x is BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
     "anchor": "if (x === x.parent.left) {",
     "annotation": { "question": "Is x a left child?", "answer": "Yes" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "let w = x.parent.right;",
+    "annotation": { "msg": "Get sibling w (parent's right child)" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"w\", w);",
+    "occurrence": 0,
+    "annotation": { "msg": "Track w = ${w.isNil ? 'NIL' : w.key}" }
   },
   {
     "fn": "deleteFixup",
@@ -199,8 +736,56 @@
   },
   {
     "fn": "deleteFixup",
+    "anchor": "this.recolor(w, \"BLACK\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 1: color w BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(x.parent, \"RED\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 1: color x.parent RED" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.leftRotate(x.parent);",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 1: left-rotate x.parent" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "w = x.parent.right;",
+    "occurrence": 0,
+    "annotation": { "msg": "Update w to new sibling after rotation" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"w\", w);",
+    "occurrence": 1,
+    "annotation": { "msg": "w updated to ${w.isNil ? 'NIL' : w.key} after rotation" }
+  },
+  {
+    "fn": "deleteFixup",
     "anchor": "if (w.left.color === \"BLACK\" && w.right.color === \"BLACK\") {",
     "annotation": { "question": "Are both of w's children BLACK?", "answer": "Yes — Case 2" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w, \"RED\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 2: color w RED" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "x = x.parent;",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 2: move x up to parent" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 0,
+    "annotation": { "msg": "x moves up to ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "deleteFixup",
@@ -215,9 +800,85 @@
   },
   {
     "fn": "deleteFixup",
+    "anchor": "this.recolor(w.left, \"BLACK\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 3: color w.left BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w, \"RED\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 3: color w RED" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.rightRotate(w);",
+    "annotation": { "msg": "Case 3: right-rotate w" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "w = x.parent.right;",
+    "occurrence": 1,
+    "annotation": { "msg": "Update w to new sibling after rotation" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"w\", w);",
+    "occurrence": 2,
+    "annotation": { "msg": "w updated to ${w.isNil ? 'NIL' : w.key} after rotation" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w, x.parent.color);",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 4: color w = x.parent's color" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(x.parent, \"BLACK\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 4: color x.parent BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w.right, \"BLACK\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 4: color w.right BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.leftRotate(x.parent);",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 4: left-rotate x.parent" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "x = this.tree.root;",
+    "occurrence": 0,
+    "annotation": { "msg": "Set x to root (Case 4 — loop will end)" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 1,
+    "annotation": { "msg": "x = root (loop will exit)" }
+  },
+  {
+    "fn": "deleteFixup",
     "anchor": "} else {",
     "occurrence": 1,
     "annotation": { "question": "Is x a left child?", "answer": "No — symmetric case" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "let w = x.parent.left;",
+    "annotation": { "msg": "Get sibling w (parent's left child)" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"w\", w);",
+    "occurrence": 3,
+    "annotation": { "msg": "Track w = ${w.isNil ? 'NIL' : w.key}" }
   },
   {
     "fn": "deleteFixup",
@@ -227,8 +888,56 @@
   },
   {
     "fn": "deleteFixup",
+    "anchor": "this.recolor(w, \"BLACK\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 1 (sym): color w BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(x.parent, \"RED\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 1 (sym): color x.parent RED" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.rightRotate(x.parent);",
+    "occurrence": 0,
+    "annotation": { "msg": "Case 1 (sym): right-rotate x.parent" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "w = x.parent.left;",
+    "occurrence": 0,
+    "annotation": { "msg": "Update w to new sibling after rotation" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"w\", w);",
+    "occurrence": 4,
+    "annotation": { "msg": "w updated to ${w.isNil ? 'NIL' : w.key} after rotation" }
+  },
+  {
+    "fn": "deleteFixup",
     "anchor": "if (w.right.color === \"BLACK\" && w.left.color === \"BLACK\") {",
     "annotation": { "question": "Are both of w's children BLACK?", "answer": "Yes — Case 2" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w, \"RED\");",
+    "occurrence": 2,
+    "annotation": { "msg": "Case 2 (sym): color w RED" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "x = x.parent;",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 2 (sym): move x up to parent" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 2,
+    "annotation": { "msg": "x moves up to ${x.isNil ? 'NIL' : x.key}" }
   },
   {
     "fn": "deleteFixup",
@@ -240,5 +949,75 @@
     "fn": "deleteFixup",
     "anchor": "if (w.left.color === \"BLACK\") {",
     "annotation": { "question": "Is w.left BLACK?", "answer": "Yes — Case 3" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w.right, \"BLACK\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 3 (sym): color w.right BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w, \"RED\");",
+    "occurrence": 3,
+    "annotation": { "msg": "Case 3 (sym): color w RED" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.leftRotate(w);",
+    "annotation": { "msg": "Case 3 (sym): left-rotate w" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "w = x.parent.left;",
+    "occurrence": 1,
+    "annotation": { "msg": "Update w to new sibling after rotation" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"w\", w);",
+    "occurrence": 5,
+    "annotation": { "msg": "w updated to ${w.isNil ? 'NIL' : w.key} after rotation" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w, x.parent.color);",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 4 (sym): color w = x.parent's color" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(x.parent, \"BLACK\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 4 (sym): color x.parent BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(w.left, \"BLACK\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 4 (sym): color w.left BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.rightRotate(x.parent);",
+    "occurrence": 1,
+    "annotation": { "msg": "Case 4 (sym): right-rotate x.parent" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "x = this.tree.root;",
+    "occurrence": 1,
+    "annotation": { "msg": "Set x to root (Case 4 — loop will end)" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.trackPointer(\"x\", x);",
+    "occurrence": 3,
+    "annotation": { "msg": "x = root (loop will exit)" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.recolor(x, \"BLACK\");",
+    "annotation": { "msg": "Ensure x is BLACK" }
   }
 ]
