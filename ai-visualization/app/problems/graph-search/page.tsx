@@ -5,8 +5,8 @@ import GraphView from "./components/graphView";
 import SolutionEditor from "@/app/components/editors/solutionEditor";
 import CaseEditor from "@/app/components/editors/problemEditor";
 import { Graph, GraphContext, GridGraph } from "@/lib/graphs/graph";
-import { GraphSearchResult, GraphSearchSolution, buildGraphSearchSolution } from "@/lib/graphs/graphsolution"; // Import the missing class
-import { useCallback, useEffect, useState } from "react";
+import { GraphSearchResult, GraphSearchSolution, buildGraphSearchSolution } from "@/lib/graphs/graphsolution";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ensureError } from "@/lib/errors/error";
 import { HDivider, VDivider } from "@/app/components/divider";
 import { toast } from "react-toastify";
@@ -25,6 +25,17 @@ export default function GraphSearchPage() {
     let [graphSteps, setGraphSteps] = useState<GraphSearchResult[]>([]);
     let [graphStepIndex, setGraphStepIndex] = useState(0);
     
+    const activeLine = useMemo(() => {
+        if (graphStepIndex <= 0 || graphSteps.length === 0) return null;
+        return graphSteps[graphStepIndex - 1]?.sourceLine ?? null;
+    }, [graphStepIndex, graphSteps]);
+
+    const explanation = useMemo(() => {
+        if (graphStepIndex <= 0 || graphSteps.length === 0) return undefined;
+        const val = graphSteps[graphStepIndex - 1]?.debugValue;
+        return val != null ? String(val) : undefined;
+    }, [graphStepIndex, graphSteps]);
+
     function updateSolutionSteps(solverData: string, graphContext: GraphContext) {
         const graph = graphContext.graph;
         if (!solverData || !graph) {
@@ -84,7 +95,6 @@ export default function GraphSearchPage() {
         setAlgoErrorMessage("");
     },[]);
     
-    // Execute the step at StepIndex
     const handleStep = useCallback((steps: GraphSearchResult[], stepIndex: number) => {
         const graph = ctx.graph;
         if (!graph) {
@@ -101,7 +111,7 @@ export default function GraphSearchPage() {
         setGraphStepIndex(stepIndex + 1);
         return stepIndex + 1;
     },[ctx]);
-    // Undo the step at StepIndex - 1
+
     const handleBackStep = useCallback((steps: GraphSearchResult[], stepIndex: number) => { 
         const graph = ctx.graph;
         if (!graph) {
@@ -176,7 +186,6 @@ export default function GraphSearchPage() {
     let executed = ctx.commandHandler.executeToCurrent(ctx);
     if (executed && executed.length > 0) {
         for (let cmd of executed) console.log(`Executed command: ${cmd.name}`);
-        // Backwards update from commands!
         setGraphData(ctx.graph!.stringify());
     }
 
@@ -185,7 +194,7 @@ export default function GraphSearchPage() {
             <Header selectedPage="graphsearch"></Header>
             <div className="flex flex-row items-stretch flex-grow">
                 <div className="flex flex-col justify-stretch" style={{"width": `${leftWidth}px`}}>
-                    <SolutionEditor solutionHeight={solHeight} problem={"graph-search"} onSolutionChanged={onSolutionDataChanged} runner={runAlgo} errorMessage={algoErrorMessage}></SolutionEditor>
+                    <SolutionEditor solutionHeight={solHeight} problem={"graph-search"} onSolutionChanged={onSolutionDataChanged} runner={runAlgo} errorMessage={algoErrorMessage} activeLine={activeLine}></SolutionEditor>
                     <HDivider onWidthChangeRequest={function (v: number): void {
                         setSolHeight(solHeight + v);
                     } }></HDivider>
@@ -196,7 +205,7 @@ export default function GraphSearchPage() {
                 })}></VDivider>
                 <div className="p-3 m-2 flex-grow">
                     <GraphView graph={ctx.graph} stepHandler={onStepRequested} onGraphChanged={handleGraphBackwardsData}
-                    totalSteps={graphSteps.length} logData={debugData} stepIndex={graphStepIndex}></GraphView>
+                    totalSteps={graphSteps.length} logData={debugData} stepIndex={graphStepIndex} explanation={explanation}></GraphView>
                 </div>
             </div>
         </div>

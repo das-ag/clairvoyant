@@ -15,12 +15,13 @@ const init_defaultAlgos: string[] = []
 
 const js = javascript();
 
-export default function SolutionEditor({problem, errorMessage, solutionHeight, runner, onSolutionChanged: onSolutionChanged}: {
+export default function SolutionEditor({problem, errorMessage, solutionHeight, runner, onSolutionChanged: onSolutionChanged, activeLine}: {
     problem: string,
     errorMessage: string,
     solutionHeight: number,
     runner: () => void,
-    onSolutionChanged: (v: string) => void
+    onSolutionChanged: (v: string) => void,
+    activeLine?: number | null
 }) {
     let [algoData, setAlgoData] = useState("");
     let [algoId, setAlgoId] = useState("");
@@ -84,7 +85,7 @@ export default function SolutionEditor({problem, errorMessage, solutionHeight, r
             </a>
         </div>
         <div className="flex-grow flex">
-            <CodeView style={{height: `${solutionHeight}px`}} lang="javascript" extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]} value={algoData} onChange={e => setSolution(e ?? "")}>
+            <CodeView style={{height: `${solutionHeight}px`}} lang="javascript" extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]} value={algoData} onChange={e => setSolution(e ?? "")} activeLine={activeLine}>
             </CodeView>
         </div>
         {errorMessage ? (<div className="bg-opacity-50 max-h-32 overflow-y-auto border p-1 mt-1 border-solid rounded-md border-danger-500 bg-danger-100 dark:bg-danger-900 text-danger-800 dark:text-danger-200">

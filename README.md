@@ -1,28 +1,31 @@
-# AI Visualizer
+# Clairvoyant
 
-This project is an AI visualization web application meant to assist in the teaching and learning of Artificial Intelligence and Machine Learning algorithms.
+An AI visualization web application for teaching and learning Artificial Intelligence and Machine Learning algorithms.
 
-Backed by [Flask](https://flask.palletsprojects.com/en/3.0.x/) and [React](https://react.dev) with [next.js](https://nextjs.org)
+Live at [clairvoyantapp.me](https://clairvoyantapp.me)
 
-## How to run the AI Visualizer
+Built with [React](https://react.dev) and [Next.js](https://nextjs.org). Deployed on [Vercel](https://vercel.com).
 
-### Prerequisites:
+## Local development
 
-You'll need to install some software before you can start using the AI visualizer locally.
+### Prerequisites
 
-- Python (recommended version: 3.11) with the pip package manager
-- Node.js (recommended version: latest)
+- Node.js (recommended version: latest LTS)
 
 ### First-time setup
 
-You might need to do this again when we have module/dependency changes.
+In the `ai-visualization/` directory, install dependencies:
 
-- In `/ai-visualizer`, run `npm i` - This will install all required node dependencies
-- In `/api`, run `pip install -r requirements.txt` - This will install the Flask python package using pip, along with any other required dependencies
+```
+npm install
+```
 
-You may choose to instead use a python package manager like conda to avoid conflicts with your locally-installed packages.
+### Running the app
 
-### Launching the AI Visualizer
+In the `ai-visualization/` directory:
 
-- In the `/ai-visualizer` subfolder, run `npm run dev`
-- In the `/api` subfolder, run `py main.py` (The way you run python may vary slightly depending on your installation)
+```
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the app.

@@ -1,6 +1,7 @@
 import { ensureError } from "../errors/error";
 import { Command, PropertyChangeCommand } from "../utils/commands";
 import { ItemPropertySet } from "../utils/properties";
+import { getEvalCallerLine } from "../utils/stackTrace";
 import { GraphNode } from "./components";
 import { EditableGraphComponent, Graph, GraphContext } from "./graph";
 import { GraphFailureCommand, GraphSuccessCommand, LayerGraphCommand } from "./graphcommands";
@@ -10,11 +11,13 @@ export class GraphSearchResult {
     debugValue: any;
     command?: Command<GraphContext>;
     isTerminal: boolean;
+    sourceLine: number | null;
 
-    constructor(debugValue: any = null, command?: Command<GraphContext>, isTerminal = false) {
+    constructor(debugValue: any = null, command?: Command<GraphContext>, isTerminal = false, sourceLine: number | null = null) {
         this.debugValue = debugValue;
         this.command = command;
         this.isTerminal = isTerminal;
+        this.sourceLine = sourceLine;
     }
 }
 
@@ -43,26 +46,28 @@ export class GraphSearchSolution {
     }
 
     failure(debugValue: any = null): boolean {
-        this.__steps.push(new GraphSearchResult(debugValue, new GraphFailureCommand(), true));
+        const line = getEvalCallerLine();
+        this.__steps.push(new GraphSearchResult(debugValue, new GraphFailureCommand(), true, line));
         return false;
     }
     success(debugValue: any = null): boolean {
-        this.__steps.push(new GraphSearchResult(debugValue, new GraphSuccessCommand(), true));
+        const line = getEvalCallerLine();
+        this.__steps.push(new GraphSearchResult(debugValue, new GraphSuccessCommand(), true, line));
         return true;
     }
     visit(cell: GraphNode, debugValue: any = null): void {
-        this.alter([{target: cell, property: "state", value: "visited"}], debugValue);
+        this.alter([{target: cell, property: "state", value: "visited"}], debugValue, getEvalCallerLine());
     }
     expand(cell: GraphNode, debugValue: any = null): void {
-        this.alter([{target: cell, property: "state", value: "expanded"}], debugValue);
+        this.alter([{target: cell, property: "state", value: "expanded"}], debugValue, getEvalCallerLine());
     }
     highlight(components: EditableGraphComponent[], debugValue: any = null): void {
-        this.alter(components.map(c => {return {target: c, property: "highlighted", value: true}}), debugValue);
+        this.alter(components.map(c => {return {target: c, property: "highlighted", value: true}}), debugValue, getEvalCallerLine());
     }
     unhighlight(components: EditableGraphComponent[], debugValue: any = null): void {
-        this.alter(components.map(c => {return {target: c, property: "highlighted", value: false}}), debugValue);
+        this.alter(components.map(c => {return {target: c, property: "highlighted", value: false}}), debugValue, getEvalCallerLine());
     }
-    alter(changes: ItemPropertySet<EditableGraphComponent>[], debugValue: any = null): void {
+    alter(changes: ItemPropertySet<EditableGraphComponent>[], debugValue: any = null, callerLine: number | null = null): void {
         if (!this.__propertyStore) this.__propertyStore = new Map();
         let contextfulChanges = changes.map(change => {
             let oldValue = this.__propertyStore.get(change.target)?.[change.property] ?? change.target.getProp(change.property);
@@ -73,13 +78,15 @@ export class GraphSearchSolution {
             store[change.property] = change.value;
             this.__propertyStore.set(change.target, store);
         }
-        this.__steps.push(new GraphSearchResult(debugValue, new PropertyChangeCommand(contextfulChanges)));
+        this.__steps.push(new GraphSearchResult(debugValue, new PropertyChangeCommand(contextfulChanges), false, callerLine));
     }
     log(debugValue: any): void {
-        this.__steps.push(new GraphSearchResult(debugValue));
+        const line = getEvalCallerLine();
+        this.__steps.push(new GraphSearchResult(debugValue, undefined, false, line));
     }
 
     create(rawGraph: string | RawGraph, debugValue: any): Graph {
+        const line = getEvalCallerLine();
         let graphResult;
         if (typeof(rawGraph) === "string") {
             graphResult = Graph.fromNotation(rawGraph);
@@ -87,7 +94,7 @@ export class GraphSearchSolution {
             graphResult = Graph.fromRaw(rawGraph);
         }
         
-        this.__steps.push(new GraphSearchResult(debugValue, new LayerGraphCommand(graphResult)));
+        this.__steps.push(new GraphSearchResult(debugValue, new LayerGraphCommand(graphResult), false, line));
         return graphResult;
     }
 }
