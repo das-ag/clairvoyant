@@ -1,1 +1,244 @@
-[]
+[
+  {
+    "fn": "leftRotate",
+    "anchor": "this.logStep({x});",
+    "annotation": { "msg": "Left-rotate on ${x.key}" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "if (x.parent === this.tree.NIL) {",
+    "annotation": { "question": "Is the node the root?", "answer": "Yes — set new root" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "} else if (x === x.parent.left) {",
+    "annotation": { "question": "Is the node the root?", "answer": "No — it is a left child" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "} else {",
+    "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
+  },
+
+  {
+    "fn": "rightRotate",
+    "anchor": "this.logStep({y});",
+    "annotation": { "msg": "Right-rotate on ${y.key}" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "if (y.parent === this.tree.NIL) {",
+    "annotation": { "question": "Is the node the root?", "answer": "Yes — set new root" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "} else if (y === y.parent.left) {",
+    "annotation": { "question": "Is the node the root?", "answer": "No — it is a left child" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "} else {",
+    "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
+  },
+
+  {
+    "fn": "transplant",
+    "anchor": "this.logStep({u, v});",
+    "annotation": { "msg": "Transplant: replace ${u.key} with ${v.isNil ? 'NIL' : v.key}" }
+  },
+  {
+    "fn": "transplant",
+    "anchor": "if (u.parent === this.tree.NIL) {",
+    "annotation": { "question": "Is the node the root?", "answer": "Yes — set new root" }
+  },
+  {
+    "fn": "transplant",
+    "anchor": "} else if (u === u.parent.left) {",
+    "annotation": { "question": "Is the node the root?", "answer": "No — it is a left child" }
+  },
+  {
+    "fn": "transplant",
+    "anchor": "} else {",
+    "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
+  },
+
+  {
+    "fn": "insert",
+    "anchor": "this.logStep({key});",
+    "annotation": { "msg": "Begin inserting key ${key}" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "if (z.key < x.key) {",
+    "annotation": { "question": "Is ${z.key} < ${x.key}?", "answer": "Yes — explore left subtree" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "} else {",
+    "annotation": { "question": "Is ${z.key} < ${x.key}?", "answer": "No — explore right subtree" }
+  },
+  {
+    "fn": "insert",
+    "anchor": "this.done({key});",
+    "annotation": { "msg": "Insert of ${key} complete" }
+  },
+
+  {
+    "fn": "insertFixup",
+    "anchor": "if (z.parent === z.parent.parent.left) {",
+    "annotation": { "question": "Is z.parent a left child?", "answer": "Yes" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "if (uncle.color === \"RED\") {",
+    "occurrence": 0,
+    "annotation": { "question": "Is uncle RED?", "answer": "Yes — Case 1: recolor" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "} else {",
+    "occurrence": 0,
+    "annotation": { "question": "Is uncle RED?", "answer": "No — Case 2 or 3" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "if (z === z.parent.right) {",
+    "annotation": { "question": "Is z a right child?", "answer": "Yes — Case 2: rotate to Case 3" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "} else {",
+    "occurrence": 1,
+    "annotation": { "question": "Is z.parent a left child?", "answer": "No — symmetric case" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "if (uncle.color === \"RED\") {",
+    "occurrence": 1,
+    "annotation": { "question": "Is uncle RED?", "answer": "Yes — Case 1: recolor" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "} else {",
+    "occurrence": 2,
+    "annotation": { "question": "Is uncle RED?", "answer": "No — Case 2 or 3" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "if (z === z.parent.left) {",
+    "annotation": { "question": "Is z a left child?", "answer": "Yes — Case 2: rotate to Case 3" }
+  },
+
+  {
+    "fn": "delete",
+    "anchor": "this.logStep({key});",
+    "occurrence": 0,
+    "annotation": { "msg": "Key ${key} not found" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.done({key});",
+    "occurrence": 0,
+    "annotation": { "msg": "Delete of ${key} aborted — key not found" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.logStep({key});",
+    "occurrence": 1,
+    "annotation": { "msg": "Begin deleting key ${key}" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "if (z.left === this.tree.NIL) {",
+    "annotation": { "question": "Does z have a left child?", "answer": "No — replace with right child" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "} else if (z.right === this.tree.NIL) {",
+    "annotation": { "question": "Does z have a left child?", "answer": "Yes. Does z have a right child? No — replace with left child" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "} else {",
+    "occurrence": 0,
+    "annotation": { "question": "Does z have two children?", "answer": "Yes — find successor" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "if (y.parent === z) {",
+    "annotation": { "question": "Is successor a direct child of z?", "answer": "Yes — link x.parent to y" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "} else {",
+    "occurrence": 1,
+    "annotation": { "question": "Is successor a direct child of z?", "answer": "No — transplant successor out first" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "if (yOriginalColor === \"BLACK\") {",
+    "annotation": { "question": "Was the original color BLACK?", "answer": "Yes — fixup needed" }
+  },
+  {
+    "fn": "delete",
+    "anchor": "this.done({key});",
+    "occurrence": 1,
+    "annotation": { "msg": "Delete of ${key} complete" }
+  },
+
+  {
+    "fn": "deleteFixup",
+    "anchor": "if (x === x.parent.left) {",
+    "annotation": { "question": "Is x a left child?", "answer": "Yes" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "if (w.color === \"RED\") {",
+    "occurrence": 0,
+    "annotation": { "question": "Is sibling w RED?", "answer": "Yes — Case 1" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "if (w.left.color === \"BLACK\" && w.right.color === \"BLACK\") {",
+    "annotation": { "question": "Are both of w's children BLACK?", "answer": "Yes — Case 2" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "} else {",
+    "occurrence": 0,
+    "annotation": { "question": "Are both of w's children BLACK?", "answer": "No" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "if (w.right.color === \"BLACK\") {",
+    "annotation": { "question": "Is w.right BLACK?", "answer": "Yes — Case 3" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "} else {",
+    "occurrence": 1,
+    "annotation": { "question": "Is x a left child?", "answer": "No — symmetric case" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "if (w.color === \"RED\") {",
+    "occurrence": 1,
+    "annotation": { "question": "Is sibling w RED?", "answer": "Yes — Case 1" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "if (w.right.color === \"BLACK\" && w.left.color === \"BLACK\") {",
+    "annotation": { "question": "Are both of w's children BLACK?", "answer": "Yes — Case 2" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "} else {",
+    "occurrence": 2,
+    "annotation": { "question": "Are both of w's children BLACK?", "answer": "No" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "if (w.left.color === \"BLACK\") {",
+    "annotation": { "question": "Is w.left BLACK?", "answer": "Yes — Case 3" }
+  }
+]

@@ -1,416 +1,300 @@
-// CLRS-style Red-Black Tree — Insert & Delete with full visualization.
-// Structure follows CLRS Chapter 13 (4th ed.) but adapted to JavaScript
-// and the project's eval/prototype visualization pattern.
+// CLRS-style Red-Black Tree — Insert & Delete
+// Follows CLRS Chapter 13 (4th edition).
 
 class RBTSolution {
     constructor(tree) {
         this.tree = tree;
     }
 
-    // ── LEFT-ROTATE (CLRS LEFT-ROTATE) ───────────────────────────────
+    // ── LEFT-ROTATE (CLRS 13.2) ─────────────────────────────────────
 
-    leftRotate(x, msg) {
-        this.logStep(msg);
+    leftRotate(x) {
+        this.logStep({x});
         let y = x.right;
-        this.linkRight(x, y.left,
-            `x.right = y.left (${y.left === this.tree.NIL ? "NIL" : y.left.key})`);
+        // Turn y's left subtree into x's right subtree
+        this.linkRight(x, y.left);
         if (y.left !== this.tree.NIL)
-            this.linkParent(y.left, x, `y.left.parent = x (${x.key})`);
-        this.linkParent(y, x.parent,
-            `y.parent = x.parent (${x.parent === this.tree.NIL ? "NIL" : x.parent.key})`);
+            this.linkParent(y.left, x);
+        // Link y to x's parent
+        this.linkParent(y, x.parent);
         if (x.parent === this.tree.NIL) {
-            this.branch("Is x the root?", "Yes — y becomes the new root");
-            this.setRoot(y, `y (${y.key}) becomes root`);
+            this.setRoot(y);
         } else if (x === x.parent.left) {
-            this.branch("Is x the root?", `No — x is a left child of ${x.parent.key}`);
-            this.linkLeft(x.parent, y, `x.parent.left = y (${y.key})`);
+            this.linkLeft(x.parent, y);
         } else {
-            this.branch("Is x the root?", `No — x is a right child of ${x.parent.key}`);
-            this.linkRight(x.parent, y, `x.parent.right = y (${y.key})`);
+            this.linkRight(x.parent, y);
         }
-        this.linkLeft(y, x, `y.left = x (${x.key})`);
-        this.linkParent(x, y, `x.parent = y (${y.key})`);
+        // Put x on y's left
+        this.linkLeft(y, x);
+        this.linkParent(x, y);
     }
 
-    // ── RIGHT-ROTATE (CLRS RIGHT-ROTATE) ─────────────────────────────
+    // ── RIGHT-ROTATE (CLRS 13.2) ────────────────────────────────────
 
-    rightRotate(y, msg) {
-        this.logStep(msg);
+    rightRotate(y) {
+        this.logStep({y});
         let x = y.left;
-        this.linkLeft(y, x.right,
-            `y.left = x.right (${x.right === this.tree.NIL ? "NIL" : x.right.key})`);
+        // Turn x's right subtree into y's left subtree
+        this.linkLeft(y, x.right);
         if (x.right !== this.tree.NIL)
-            this.linkParent(x.right, y, `x.right.parent = y (${y.key})`);
-        this.linkParent(x, y.parent,
-            `x.parent = y.parent (${y.parent === this.tree.NIL ? "NIL" : y.parent.key})`);
+            this.linkParent(x.right, y);
+        // Link x to y's parent
+        this.linkParent(x, y.parent);
         if (y.parent === this.tree.NIL) {
-            this.branch("Is y the root?", "Yes — x becomes the new root");
-            this.setRoot(x, `x (${x.key}) becomes root`);
+            this.setRoot(x);
         } else if (y === y.parent.left) {
-            this.branch("Is y the root?", `No — y is a left child of ${y.parent.key}`);
-            this.linkLeft(y.parent, x, `y.parent.left = x (${x.key})`);
+            this.linkLeft(y.parent, x);
         } else {
-            this.branch("Is y the root?", `No — y is a right child of ${y.parent.key}`);
-            this.linkRight(y.parent, x, `y.parent.right = x (${x.key})`);
+            this.linkRight(y.parent, x);
         }
-        this.linkRight(x, y, `x.right = y (${y.key})`);
-        this.linkParent(y, x, `y.parent = x (${x.key})`);
+        // Put y on x's right
+        this.linkRight(x, y);
+        this.linkParent(y, x);
     }
 
-    // ── RB-TRANSPLANT (CLRS RB-TRANSPLANT) ───────────────────────────
+    // ── RB-TRANSPLANT (CLRS 13.4) ──────────────────────────────────
 
-    transplant(u, v, msg) {
-        this.logStep(msg);
-        let vLabel = v === this.tree.NIL ? "NIL" : v.key;
+    transplant(u, v) {
+        this.logStep({u, v});
         if (u.parent === this.tree.NIL) {
-            this.branch(`Is ${u.key} the root?`, `Yes — ${vLabel} becomes the new root`);
-            this.setRoot(v, `v (${vLabel}) becomes root`);
+            this.setRoot(v);
         } else if (u === u.parent.left) {
-            this.branch(`Is ${u.key} the root?`, `No — ${u.key} is a left child, replace with ${vLabel}`);
-            this.linkLeft(u.parent, v, `u.parent.left = v (${vLabel})`);
+            this.linkLeft(u.parent, v);
         } else {
-            this.branch(`Is ${u.key} the root?`, `No — ${u.key} is a right child, replace with ${vLabel}`);
-            this.linkRight(u.parent, v, `u.parent.right = v (${vLabel})`);
+            this.linkRight(u.parent, v);
         }
-        this.linkParent(v, u.parent,
-            `v.parent = u.parent (${u.parent === this.tree.NIL ? "NIL" : u.parent.key})`);
+        this.linkParent(v, u.parent);
     }
 
-    // ── INSERT (CLRS RB-INSERT) ──────────────────────────────────────
+    // ── RB-INSERT (CLRS 13.3) ───────────────────────────────────────
 
     insert(key) {
         let z = this.tree.makeNode(key);
         let y = this.tree.NIL;
         let x = this.tree.root;
 
-        this.logStep(`Begin inserting key ${key}`);
+        this.logStep({key});
+        this.trackPointer("z", z);
+        this.trackPointer("x", x);
 
+        // Walk down the tree to find the insertion point
         while (x !== this.tree.NIL) {
             y = x;
-            this.trackPointer("y", y, `y = ${y.key}`);
+            this.trackPointer("y", y);
             if (z.key < x.key) {
-                this.branch(`Is ${z.key} < ${x.key}?`, "Yes — explore left subtree");
                 x = x.left;
             } else {
-                this.branch(`Is ${z.key} < ${x.key}?`, "No — explore right subtree");
                 x = x.right;
             }
-            this.trackPointer("x", x,
-                `x = ${x === this.tree.NIL ? "NIL" : x.key}`);
+            this.trackPointer("x", x);
         }
 
-        this.insertNode(z,
-            `Insert node ${z.key} as ${y === this.tree.NIL ? "root" : (z.key < y.key ? "left" : "right") + " child of " + y.key}`);
-        this.recolor(z, "RED", `Color new node ${z.key} RED`);
-        this.trackPointer("z", z, `z = ${z.key}`);
+        // Insert z as a child of y
+        this.insertNode(z);
+        this.recolor(z, "RED");
         this.clearPointer("x");
         this.clearPointer("y");
 
         this.insertFixup(z);
-        this.done(`Insert of ${key} complete`);
+        this.done({key});
     }
 
-    // ── INSERT-FIXUP (CLRS RB-INSERT-FIXUP) ──────────────────────────
+    // ── RB-INSERT-FIXUP (CLRS 13.3) ────────────────────────────────
 
     insertFixup(z) {
         while (z.parent.color === "RED") {
             if (z.parent === z.parent.parent.left) {
-                this.branch(`Is z.parent (${z.parent.key}) a left child?`, "Yes");
                 let uncle = z.parent.parent.right;
-                this.trackPointer("uncle", uncle,
-                    `uncle = ${uncle === this.tree.NIL ? "NIL" : uncle.key}`);
+                this.trackPointer("uncle", uncle);
 
                 if (uncle.color === "RED") {
-                    this.branch(`Is uncle (${uncle === this.tree.NIL ? "NIL" : uncle.key}) RED?`,
-                        "Yes — Case 1: recolor parent, uncle, and grandparent");
-                    this.recolor(z.parent, "BLACK",
-                        `Case 1: recolor parent ${z.parent.key} BLACK`);
-                    this.recolor(uncle, "BLACK",
-                        `Case 1: recolor uncle ${uncle.key} BLACK`);
-                    this.recolor(z.parent.parent, "RED",
-                        `Case 1: recolor grandparent ${z.parent.parent.key} RED`);
+                    // Case 1: uncle is red — recolor and move z up
+                    this.recolor(z.parent, "BLACK");
+                    this.recolor(uncle, "BLACK");
+                    this.recolor(z.parent.parent, "RED");
                     z = z.parent.parent;
-                    this.trackPointer("z", z,
-                        `Case 1: z moves up to ${z.key}`);
+                    this.trackPointer("z", z);
                 } else {
-                    this.branch(`Is uncle (${uncle === this.tree.NIL ? "NIL" : uncle.key}) RED?`,
-                        "No — uncle is BLACK, check Case 2 or 3");
                     if (z === z.parent.right) {
-                        this.branch(`Is z (${z.key}) a right child?`,
-                            "Yes — Case 2: rotate left to reduce to Case 3");
+                        // Case 2: z is a right child — rotate to reduce to Case 3
                         z = z.parent;
-                        this.trackPointer("z", z,
-                            `Case 2: z = z.parent = ${z.key}`);
-                        this.leftRotate(z,
-                            `Case 2: left-rotate on ${z.key}`);
-                    } else {
-                        this.branch(`Is z (${z.key}) a right child?`,
-                            "No — already Case 3");
+                        this.trackPointer("z", z);
+                        this.leftRotate(z);
                     }
-                    this.recolor(z.parent, "BLACK",
-                        `Case 3: recolor parent ${z.parent.key} BLACK`);
-                    this.recolor(z.parent.parent, "RED",
-                        `Case 3: recolor grandparent ${z.parent.parent.key} RED`);
-                    this.rightRotate(z.parent.parent,
-                        `Case 3: right-rotate on ${z.parent.parent.key}`);
+                    // Case 3: recolor and right-rotate
+                    this.recolor(z.parent, "BLACK");
+                    this.recolor(z.parent.parent, "RED");
+                    this.rightRotate(z.parent.parent);
                 }
             } else {
-                this.branch(`Is z.parent (${z.parent.key}) a left child?`, "No — symmetric case");
+                // Symmetric: z.parent is a right child
                 let uncle = z.parent.parent.left;
-                this.trackPointer("uncle", uncle,
-                    `uncle = ${uncle === this.tree.NIL ? "NIL" : uncle.key}`);
+                this.trackPointer("uncle", uncle);
 
                 if (uncle.color === "RED") {
-                    this.branch(`Is uncle (${uncle === this.tree.NIL ? "NIL" : uncle.key}) RED?`,
-                        "Yes — Case 1 (sym): recolor parent, uncle, and grandparent");
-                    this.recolor(z.parent, "BLACK",
-                        `Case 1 (sym): recolor parent ${z.parent.key} BLACK`);
-                    this.recolor(uncle, "BLACK",
-                        `Case 1 (sym): recolor uncle ${uncle.key} BLACK`);
-                    this.recolor(z.parent.parent, "RED",
-                        `Case 1 (sym): recolor grandparent ${z.parent.parent.key} RED`);
+                    // Case 1 (sym)
+                    this.recolor(z.parent, "BLACK");
+                    this.recolor(uncle, "BLACK");
+                    this.recolor(z.parent.parent, "RED");
                     z = z.parent.parent;
-                    this.trackPointer("z", z,
-                        `Case 1 (sym): z moves up to ${z.key}`);
+                    this.trackPointer("z", z);
                 } else {
-                    this.branch(`Is uncle (${uncle === this.tree.NIL ? "NIL" : uncle.key}) RED?`,
-                        "No — uncle is BLACK, check Case 2 or 3 (sym)");
                     if (z === z.parent.left) {
-                        this.branch(`Is z (${z.key}) a left child?`,
-                            "Yes — Case 2 (sym): rotate right to reduce to Case 3");
+                        // Case 2 (sym)
                         z = z.parent;
-                        this.trackPointer("z", z,
-                            `Case 2 (sym): z = z.parent = ${z.key}`);
-                        this.rightRotate(z,
-                            `Case 2 (sym): right-rotate on ${z.key}`);
-                    } else {
-                        this.branch(`Is z (${z.key}) a left child?`,
-                            "No — already Case 3 (sym)");
+                        this.trackPointer("z", z);
+                        this.rightRotate(z);
                     }
-                    this.recolor(z.parent, "BLACK",
-                        `Case 3 (sym): recolor parent ${z.parent.key} BLACK`);
-                    this.recolor(z.parent.parent, "RED",
-                        `Case 3 (sym): recolor grandparent ${z.parent.parent.key} RED`);
-                    this.leftRotate(z.parent.parent,
-                        `Case 3 (sym): left-rotate on ${z.parent.parent.key}`);
+                    // Case 3 (sym)
+                    this.recolor(z.parent, "BLACK");
+                    this.recolor(z.parent.parent, "RED");
+                    this.leftRotate(z.parent.parent);
                 }
             }
         }
-        this.recolor(this.tree.root, "BLACK", "Ensure root is BLACK");
+        this.recolor(this.tree.root, "BLACK");
         this.clearPointer("uncle");
     }
 
-    // ── DELETE (CLRS RB-DELETE) ──────────────────────────────────────
+    // ── RB-DELETE (CLRS 13.4) ───────────────────────────────────────
 
     delete(key) {
         let z = this.tree.search(key);
         if (z === this.tree.NIL) {
-            this.logStep(`Key ${key} not found in the tree`);
-            this.done(`Delete of ${key} aborted: not found`);
+            this.logStep({key});
+            this.done({key});
             return;
         }
 
-        this.logStep(`Begin deleting key ${key}`);
-        this.trackPointer("z", z, `z = ${z.key}`);
+        this.logStep({key});
+        this.trackPointer("z", z);
 
         let y = z;
         let yOriginalColor = y.color;
         let x;
 
         if (z.left === this.tree.NIL) {
-            this.branch(`Does z (${z.key}) have a left child?`,
-                "No — replace z with its right child");
+            // No left child — replace z with its right child
             x = z.right;
-            this.trackPointer("x", x,
-                `x = z.right = ${x === this.tree.NIL ? "NIL" : x.key}`);
-            this.transplant(z, z.right,
-                `Transplant ${z.key} with its right child`);
+            this.trackPointer("x", x);
+            this.transplant(z, z.right);
         } else if (z.right === this.tree.NIL) {
-            this.branch(`Does z (${z.key}) have a left child?`,
-                `Yes. Does z have a right child?`);
-            this.branch(`Does z (${z.key}) have a right child?`,
-                "No — replace z with its left child");
+            // No right child — replace z with its left child
             x = z.left;
-            this.trackPointer("x", x,
-                `x = z.left = ${x === this.tree.NIL ? "NIL" : x.key}`);
-            this.transplant(z, z.left,
-                `Transplant ${z.key} with its left child`);
+            this.trackPointer("x", x);
+            this.transplant(z, z.left);
         } else {
-            this.branch(`Does z (${z.key}) have two children?`,
-                "Yes — find successor to replace z");
+            // Two children — find in-order successor
             y = this.tree.minimum(z.right);
-            this.trackPointer("y", y, `y = successor = ${y.key}`);
+            this.trackPointer("y", y);
             yOriginalColor = y.color;
             x = y.right;
-            this.trackPointer("x", x,
-                `x = y.right = ${x === this.tree.NIL ? "NIL" : x.key}`);
+            this.trackPointer("x", x);
 
             if (y.parent === z) {
-                this.branch(`Is successor (${y.key}) a direct child of z (${z.key})?`,
-                    "Yes — set x.parent = y");
-                this.linkParent(x, y, `Set x.parent = y (successor is direct child)`);
+                this.linkParent(x, y);
             } else {
-                this.branch(`Is successor (${y.key}) a direct child of z (${z.key})?`,
-                    "No — transplant successor out first");
-                this.transplant(y, y.right,
-                    `Transplant successor ${y.key} with its right child`);
-                this.linkRight(y, z.right, `Set y.right = z.right (${z.right.key})`);
-                this.linkParent(y.right, y, `Set y.right.parent = y`);
+                this.transplant(y, y.right);
+                this.linkRight(y, z.right);
+                this.linkParent(y.right, y);
             }
-            this.transplant(z, y,
-                `Transplant ${z.key} with successor ${y.key}`);
-            this.linkLeft(y, z.left, `Set y.left = z.left (${z.left.key})`);
-            this.linkParent(y.left, y, `Set y.left.parent = y`);
-            this.recolor(y, z.color,
-                `Copy deleted node's color (${z.color}) to successor ${y.key}`);
+            this.transplant(z, y);
+            this.linkLeft(y, z.left);
+            this.linkParent(y.left, y);
+            this.recolor(y, z.color);
         }
 
-        this.removeNode(z, `Remove node ${z.key} from tree`);
+        this.removeNode(z);
         this.clearPointer("z");
 
         if (yOriginalColor === "BLACK") {
-            this.branch("Was the removed/moved node's original color BLACK?",
-                "Yes — fixup needed to restore RB properties");
             this.deleteFixup(x);
-        } else {
-            this.branch("Was the removed/moved node's original color BLACK?",
-                "No — no fixup needed");
         }
 
         this.clearPointer("x");
         this.clearPointer("y");
         this.clearPointer("w");
-        this.done(`Delete of ${key} complete`);
+        this.done({key});
     }
 
-    // ── DELETE-FIXUP (CLRS RB-DELETE-FIXUP) ──────────────────────────
+    // ── RB-DELETE-FIXUP (CLRS 13.4) ────────────────────────────────
 
     deleteFixup(x) {
         while (x !== this.tree.root && x.color === "BLACK") {
             if (x === x.parent.left) {
-                this.branch(`Is x (${x === this.tree.NIL ? "NIL" : x.key}) a left child?`, "Yes");
                 let w = x.parent.right;
-                this.trackPointer("w", w,
-                    `w (sibling) = ${w === this.tree.NIL ? "NIL" : w.key}`);
+                this.trackPointer("w", w);
 
                 if (w.color === "RED") {
-                    this.branch(`Is sibling w (${w.key}) RED?`,
-                        "Yes — Case 1: rotate to get a BLACK sibling");
-                    this.recolor(w, "BLACK",
-                        `Delete Case 1: recolor sibling ${w.key} BLACK`);
-                    this.recolor(x.parent, "RED",
-                        `Delete Case 1: recolor parent ${x.parent.key} RED`);
-                    this.leftRotate(x.parent,
-                        `Delete Case 1: left-rotate on ${x.parent.key}`);
+                    // Case 1: sibling w is red
+                    this.recolor(w, "BLACK");
+                    this.recolor(x.parent, "RED");
+                    this.leftRotate(x.parent);
                     w = x.parent.right;
-                    this.trackPointer("w", w,
-                        `Delete Case 1: new sibling w = ${w === this.tree.NIL ? "NIL" : w.key}`);
-                } else {
-                    this.branch(`Is sibling w (${w.key}) RED?`, "No — w is BLACK");
+                    this.trackPointer("w", w);
                 }
 
                 if (w.left.color === "BLACK" && w.right.color === "BLACK") {
-                    this.branch("Are both of w's children BLACK?",
-                        "Yes — Case 2: recolor w RED and move x up");
-                    this.recolor(w, "RED",
-                        `Delete Case 2: recolor sibling ${w.key} RED`);
+                    // Case 2: both of w's children are black
+                    this.recolor(w, "RED");
                     x = x.parent;
-                    this.trackPointer("x", x,
-                        `Delete Case 2: x moves up to ${x.key}`);
+                    this.trackPointer("x", x);
                 } else {
-                    this.branch("Are both of w's children BLACK?", "No");
                     if (w.right.color === "BLACK") {
-                        this.branch(`Is w.right (${w.right === this.tree.NIL ? "NIL" : w.right.key}) BLACK?`,
-                            "Yes — Case 3: rotate to get a RED right child on w");
-                        this.recolor(w.left, "BLACK",
-                            `Delete Case 3: recolor w.left ${w.left.key} BLACK`);
-                        this.recolor(w, "RED",
-                            `Delete Case 3: recolor sibling ${w.key} RED`);
-                        this.rightRotate(w,
-                            `Delete Case 3: right-rotate on ${w.key}`);
+                        // Case 3: w.right is black — rotate to set up Case 4
+                        this.recolor(w.left, "BLACK");
+                        this.recolor(w, "RED");
+                        this.rightRotate(w);
                         w = x.parent.right;
-                        this.trackPointer("w", w,
-                            `Delete Case 3: new sibling w = ${w === this.tree.NIL ? "NIL" : w.key}`);
-                    } else {
-                        this.branch(`Is w.right (${w.right === this.tree.NIL ? "NIL" : w.right.key}) BLACK?`,
-                            "No — proceed directly to Case 4");
+                        this.trackPointer("w", w);
                     }
-                    this.recolor(w, x.parent.color,
-                        `Delete Case 4: recolor sibling ${w.key} to parent's color (${x.parent.color})`);
-                    this.recolor(x.parent, "BLACK",
-                        `Delete Case 4: recolor parent ${x.parent.key} BLACK`);
-                    this.recolor(w.right, "BLACK",
-                        `Delete Case 4: recolor w.right ${w.right.key} BLACK`);
-                    this.leftRotate(x.parent,
-                        `Delete Case 4: left-rotate on ${x.parent.key}`);
+                    // Case 4: w.right is red — final fix
+                    this.recolor(w, x.parent.color);
+                    this.recolor(x.parent, "BLACK");
+                    this.recolor(w.right, "BLACK");
+                    this.leftRotate(x.parent);
                     x = this.tree.root;
-                    this.trackPointer("x", x,
-                        `Delete Case 4: x = root (${x.key}), loop ends`);
+                    this.trackPointer("x", x);
                 }
             } else {
-                this.branch(`Is x (${x === this.tree.NIL ? "NIL" : x.key}) a left child?`,
-                    "No — symmetric case (x is right child)");
+                // Symmetric: x is a right child
                 let w = x.parent.left;
-                this.trackPointer("w", w,
-                    `w (sibling) = ${w === this.tree.NIL ? "NIL" : w.key}`);
+                this.trackPointer("w", w);
 
                 if (w.color === "RED") {
-                    this.branch(`Is sibling w (${w.key}) RED?`,
-                        "Yes — Case 1 (sym): rotate to get a BLACK sibling");
-                    this.recolor(w, "BLACK",
-                        `Delete Case 1 (sym): recolor sibling ${w.key} BLACK`);
-                    this.recolor(x.parent, "RED",
-                        `Delete Case 1 (sym): recolor parent ${x.parent.key} RED`);
-                    this.rightRotate(x.parent,
-                        `Delete Case 1 (sym): right-rotate on ${x.parent.key}`);
+                    // Case 1 (sym)
+                    this.recolor(w, "BLACK");
+                    this.recolor(x.parent, "RED");
+                    this.rightRotate(x.parent);
                     w = x.parent.left;
-                    this.trackPointer("w", w,
-                        `Delete Case 1 (sym): new sibling w = ${w === this.tree.NIL ? "NIL" : w.key}`);
-                } else {
-                    this.branch(`Is sibling w (${w.key}) RED?`, "No — w is BLACK");
+                    this.trackPointer("w", w);
                 }
 
                 if (w.right.color === "BLACK" && w.left.color === "BLACK") {
-                    this.branch("Are both of w's children BLACK?",
-                        "Yes — Case 2 (sym): recolor w RED and move x up");
-                    this.recolor(w, "RED",
-                        `Delete Case 2 (sym): recolor sibling ${w.key} RED`);
+                    // Case 2 (sym)
+                    this.recolor(w, "RED");
                     x = x.parent;
-                    this.trackPointer("x", x,
-                        `Delete Case 2 (sym): x moves up to ${x.key}`);
+                    this.trackPointer("x", x);
                 } else {
-                    this.branch("Are both of w's children BLACK?", "No");
                     if (w.left.color === "BLACK") {
-                        this.branch(`Is w.left (${w.left === this.tree.NIL ? "NIL" : w.left.key}) BLACK?`,
-                            "Yes — Case 3 (sym): rotate to get a RED left child on w");
-                        this.recolor(w.right, "BLACK",
-                            `Delete Case 3 (sym): recolor w.right ${w.right.key} BLACK`);
-                        this.recolor(w, "RED",
-                            `Delete Case 3 (sym): recolor sibling ${w.key} RED`);
-                        this.leftRotate(w,
-                            `Delete Case 3 (sym): left-rotate on ${w.key}`);
+                        // Case 3 (sym)
+                        this.recolor(w.right, "BLACK");
+                        this.recolor(w, "RED");
+                        this.leftRotate(w);
                         w = x.parent.left;
-                        this.trackPointer("w", w,
-                            `Delete Case 3 (sym): new sibling w = ${w === this.tree.NIL ? "NIL" : w.key}`);
-                    } else {
-                        this.branch(`Is w.left (${w.left === this.tree.NIL ? "NIL" : w.left.key}) BLACK?`,
-                            "No — proceed directly to Case 4 (sym)");
+                        this.trackPointer("w", w);
                     }
-                    this.recolor(w, x.parent.color,
-                        `Delete Case 4 (sym): recolor sibling ${w.key} to parent's color (${x.parent.color})`);
-                    this.recolor(x.parent, "BLACK",
-                        `Delete Case 4 (sym): recolor parent ${x.parent.key} BLACK`);
-                    this.recolor(w.left, "BLACK",
-                        `Delete Case 4 (sym): recolor w.left ${w.left.key} BLACK`);
-                    this.rightRotate(x.parent,
-                        `Delete Case 4 (sym): right-rotate on ${x.parent.key}`);
+                    // Case 4 (sym)
+                    this.recolor(w, x.parent.color);
+                    this.recolor(x.parent, "BLACK");
+                    this.recolor(w.left, "BLACK");
+                    this.rightRotate(x.parent);
                     x = this.tree.root;
-                    this.trackPointer("x", x,
-                        `Delete Case 4 (sym): x = root (${x.key}), loop ends`);
+                    this.trackPointer("x", x);
                 }
             }
         }
-        this.recolor(x, "BLACK", `Ensure x (${x === this.tree.NIL ? "NIL" : x.key}) is BLACK`);
+        this.recolor(x, "BLACK");
     }
 }
 RBTSolution.prototype;
