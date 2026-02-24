@@ -4,9 +4,7 @@ import GraphSearchPage from "@/app/problems/graph-search/page"
 import React from "react"
 
 export const APP_NAME = "Clairvoyant";
-export const API_URL = process.env.NODE_ENV == "development" 
-    ? "http://localhost:5000/api/v1" 
-    : "/api/v1";
+export const API_URL = "/api/v1";
 
 export interface Problem {
     id: string,

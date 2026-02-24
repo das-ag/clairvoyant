@@ -1,0 +1,25 @@
+GENERIC
+NODE Start {"h": 31}
+NODE B {"h": 11}
+NODE C {"h": 30}
+NODE D {"h": 10}
+NODE Tail1 {"h": 9}
+NODE Tail2 {"h": 8}
+NODE Tail3 {"h": 7}
+NODE Tail4 {"h": 6}
+NODE Tail5 {"h": 5}
+NODE End {"h": 0}
+
+START Start
+GOAL End
+
+EDGE Start B {"w": 15}
+EDGE Start C
+EDGE B D
+EDGE C D
+EDGE D Tail1
+EDGE Tail1 Tail2
+EDGE Tail2 Tail3
+EDGE Tail3 Tail4
+EDGE Tail4 Tail5
+EDGE Tail5 End {"w": 24}

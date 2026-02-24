@@ -1,0 +1,26 @@
+GENERIC
+NODE A
+NODE B
+NODE C
+NODE D
+NODE E
+NODE F
+
+EDGE A B -b
+EDGE A C -b
+EDGE A D -b
+EDGE A E -b
+EDGE A F -b
+EDGE B C -b
+EDGE B D -b
+EDGE B E -b
+EDGE B F -b
+EDGE C D -b
+EDGE C E -b
+EDGE C F -b
+EDGE D E -b
+EDGE D F -b
+EDGE E F -b
+
+START A
+GOAL F

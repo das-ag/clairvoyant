@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    distDir: 'build',
     images: {
-        domains: [],
         formats: ['image/webp'],
-    }
+    },
+    experimental: {
+        outputFileTracingIncludes: {
+            '/api/**': ['./data/problems/**'],
+        },
+    },
 }
 
 module.exports = nextConfig

@@ -1,0 +1,15 @@
+GENERIC
+NODE first {"h": 2}
+NODE second {"h": 1.25}
+NODE third {"h": 0.75}
+NODE "dead end" {"h": 100}
+NODE goal
+
+EDGE first second -b 
+EDGE second third -b
+EDGE first third -b {"w": 1.5}
+EDGE second "dead end"
+EDGE third goal
+
+START first
+GOAL goal

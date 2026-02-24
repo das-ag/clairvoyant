@@ -1,0 +1,14 @@
+GRID 10 x 8
+1 1 1 1 0 1 1 1 0 1
+1 1 1 1 0 1 0 1 0 1
+0 0 0 1 0 1 0 1 0 1
+1 1 1 1 0 1 0 1 0 1
+1 0 0 0 0 1 0 1 0 1
+1 1 1 1 1 1 0 1 0 1
+0 1 0 0 0 1 0 1 1 1
+1 1 1 1 1 1 1 1 0 1
+DIAGONAL Euclidean
+START 0 0
+GOAL 9 7
+NODE 0 0 {"h": 25, "style": {"color": "green"}}
+EDGE 3 2 3 3 {"w": 2, "style": {"color": "red", "thickness": 2}}
