@@ -12,6 +12,7 @@ import { ConstDocAny, ConstDocBoolean, ConstDocNumber, ConstDocString, ConstDocV
 const RBTreeType = new IDocType("RBTree", "", "RBTree");
 const RBNodeType = new IDocType("RBNode", "", "RBNode");
 const RBColorType = new IDocType("RBColor", "", "RBColor");
+const RecordType = new IDocType("object");
 
 export default function RedBlackTreeDocs() {
     return (
@@ -55,85 +56,151 @@ export default function RedBlackTreeDocs() {
                     </DocsFunction>
 
                     <h3 className="text-lg font-semibold mt-6 mb-2">Visualization Methods</h3>
-                    <p className="mb-3 opacity-80">These methods are inherited from the base class. Call them from your algorithm to animate operations step by step.</p>
+                    <p className="mb-3 opacity-80">
+                        These methods are inherited from the base class. Call them from your algorithm to animate operations step by step.
+                        Each method auto-generates a descriptive message from its arguments. You can override or customize these messages
+                        using the <a href="#annotations">annotation system</a>.
+                    </p>
 
                     <DocsFunction clazzName="RBTSolution" functionName="insertNode" args={[
-                        { name: "z", type: RBNodeType },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "z", type: RBNodeType }
                     ]}>
                         <p>Inserts a node into the tree using standard BST insertion (walks the tree to find the correct position). The insertion is animated in the visualizer.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="removeNode" args={[
-                        { name: "z", type: RBNodeType },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "z", type: RBNodeType }
                     ]}>
                         <p>Marks a node as removed from the tree. The node will fade out in the visualizer.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="recolor" args={[
                         { name: "node", type: RBNodeType },
-                        { name: "color", type: RBColorType },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "color", type: RBColorType }
                     ]}>
                         <p>Changes the color of a node. Use <code>&quot;RED&quot;</code> or <code>&quot;BLACK&quot;</code> as the color value.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="linkLeft" args={[
                         { name: "parent", type: RBNodeType },
-                        { name: "child", type: RBNodeType },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "child", type: RBNodeType }
                     ]}>
                         <p>Sets <code>parent.left = child</code>. Use this for rotation and transplant implementations.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="linkRight" args={[
                         { name: "parent", type: RBNodeType },
-                        { name: "child", type: RBNodeType },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "child", type: RBNodeType }
                     ]}>
                         <p>Sets <code>parent.right = child</code>. Use this for rotation and transplant implementations.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="linkParent" args={[
                         { name: "child", type: RBNodeType },
-                        { name: "parent", type: RBNodeType },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "parent", type: RBNodeType }
                     ]}>
                         <p>Sets <code>child.parent = parent</code>. Use this for rotation and transplant implementations.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="setRoot" args={[
-                        { name: "node", type: RBNodeType },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "node", type: RBNodeType }
                     ]}>
                         <p>Sets the tree&apos;s root to the given node.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="trackPointer" args={[
                         { name: "name", type: ConstDocString },
-                        { name: "node", type: RBNodeType },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "node", type: RBNodeType }
                     ]}>
                         <p>Highlights a node in the visualizer with a labeled pointer (e.g. &quot;z&quot;, &quot;x&quot;, &quot;uncle&quot;). The label appears above the node and is shown in the watch panel.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="clearPointer" args={[
-                        { name: "name", type: ConstDocString },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "name", type: ConstDocString }
                     ]}>
                         <p>Removes a previously tracked pointer label.</p>
                     </DocsFunction>
-                    <DocsFunction clazzName="RBTSolution" functionName="branch" args={[
-                        { name: "question", type: ConstDocString },
-                        { name: "answer", type: ConstDocString },
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
-                    ]}>
-                        <p>Records a branching decision. The question and answer are displayed together in the debugger&apos;s explanation panel, providing intuition for why a particular case was selected.</p>
-                    </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="logStep" args={[
-                        { name: "msg", type: ConstDocString }
+                        { name: "ctx", type: RecordType, default: undefined, showDefault: true }
                     ]}>
-                        <p>Logs an explanatory message as a step without performing any tree mutation.</p>
+                        <p>Records a narrative step without performing any tree mutation. The message is
+                        pulled from the <a href="#annotations">line annotation</a> and evaluated with
+                        the optional <code>ctx</code> object merged into the template context. Pass
+                        local variables that should be available in the annotation template, e.g.
+                        {" "}<code>{"this.logStep({key})"}</code>.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="done" args={[
-                        { name: "msg", type: ConstDocString, default: undefined, showDefault: true }
+                        { name: "ctx", type: RecordType, default: undefined, showDefault: true }
                     ]}>
-                        <p>Marks the operation as complete. Call this at the end of insert and delete.</p>
+                        <p>Marks the operation as complete. Call this at the end of insert and delete. Like <code>logStep</code>,
+                        accepts an optional context object for the annotation template.</p>
                     </DocsFunction>
                 </DocsClass>
+
+                {/* ── Annotation System ─────────────────────────────────────── */}
+
+                <div id="annotations">
+                <DocsClass clazzName="Annotations">
+                    <p className="mb-3">
+                        The annotation system lets you add descriptive messages and branch explanations
+                        to algorithm lines <b>without cluttering the code</b>. Messages are stored
+                        separately and can be edited interactively.
+                    </p>
+
+                    <h4 className="font-semibold mt-4 mb-1">How it works</h4>
+                    <ul className="list-disc *:ml-5 mb-3">
+                        <li>Each visualization method auto-generates a message from its arguments
+                            (e.g. <code>linkLeft(parent, child)</code> produces
+                            {" "}<code>&quot;parent.key.left &larr; child.key&quot;</code>).</li>
+                        <li>An annotation can <b>override</b> the auto-generated message for any line.</li>
+                        <li>Annotations on <code>if</code>/<code>else if</code>/<code>else</code> lines
+                            define branch Q&amp;A that is displayed automatically when execution enters
+                            that branch.</li>
+                        <li>Default annotations ship alongside the algorithm in a <code>.annotations.json</code> file.</li>
+                    </ul>
+
+                    <h4 className="font-semibold mt-4 mb-1">Using the gutter UI</h4>
+                    <p className="mb-2">
+                        A small icon column appears to the right of line numbers in the code editor:
+                    </p>
+                    <ul className="list-disc *:ml-5 mb-3">
+                        <li><span style={{color:"#4fc3f7"}}>&#9679;</span> (blue dot) — this line has a message annotation.</li>
+                        <li><span style={{color:"#ffd54f"}}>&#9670;</span> (yellow diamond) — this is a branch line with a Q&amp;A annotation.</li>
+                        <li>Hover to reveal a <b>+</b> icon on unannotated lines.</li>
+                        <li>Click any icon to open the popover editor.</li>
+                    </ul>
+
+                    <h4 className="font-semibold mt-4 mb-1">Template syntax</h4>
+                    <p className="mb-2">
+                        Annotation messages use JavaScript template literal syntax (<code>{"${...}"}</code>).
+                        The following variables are available:
+                    </p>
+                    <ul className="list-disc *:ml-5 mb-3">
+                        <li><b>Method arguments</b> — for viz methods, the parameter names are available
+                            (e.g. <code>parent</code>, <code>child</code> for <code>linkLeft</code>).</li>
+                        <li><b>Tracked pointers</b> — all currently tracked pointers by name
+                            (e.g. <code>z</code>, <code>x</code>, <code>uncle</code>). These are
+                            {" "}<DocsRef refs="RBNode">RBNode</DocsRef> objects, so you can
+                            access <code>.key</code>, <code>.color</code>, <code>.isNil</code>, etc.</li>
+                        <li><code>tree</code> — the <DocsRef refs="RBTree">RBTree</DocsRef> instance.</li>
+                        <li><code>NIL</code> — the tree&apos;s NIL sentinel.</li>
+                        <li>For <code>logStep</code> and <code>done</code>, any variables passed in
+                            the <code>ctx</code> argument.</li>
+                    </ul>
+                    <p className="opacity-80 text-sm">
+                        If a template expression throws an error, the raw template string is displayed as a fallback.
+                    </p>
+
+                    <h4 className="font-semibold mt-4 mb-1">Branch annotations</h4>
+                    <p className="mb-2">
+                        Branches are detected automatically from <code>if</code>/<code>else if</code>/<code>else</code> lines.
+                        When a visualization method fires inside a branch body and there is an annotation on the
+                        enclosing branch line with <b>question</b> and <b>answer</b> fields, a branch
+                        step is automatically inserted before the visualization step. This replaces the
+                        old <code>this.branch()</code> method.
+                    </p>
+
+                    <h4 className="font-semibold mt-4 mb-1">Annotation storage</h4>
+                    <p>
+                        Annotations are stored as content-anchored entries (keyed by function name and
+                        trimmed line content, not line numbers), making them resilient to code edits.
+                        User edits persist for the current session. Defaults can be restored via the
+                        &quot;Reset&quot; button in the popover.
+                    </p>
+                </DocsClass>
+                </div>
 
                 <DocsClass clazzName="RBTree">
                     <p>The red-black tree instance. Accessed via <code>this.tree</code> in your solution.</p>
