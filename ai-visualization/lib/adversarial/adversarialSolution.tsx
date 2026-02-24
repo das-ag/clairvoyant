@@ -3,6 +3,7 @@ import { canSetProps, EditableComponent, ItemProperty } from "../../lib/utils/pr
 import { GenericGraph, GraphEdgeSimple, GraphNode } from "../graphs/graph";
 import { ensureError } from "../errors/error";
 import { Queue } from "../collections/queue";
+import { getEvalCallerLine } from "../utils/stackTrace";
 
 export interface AdversarialSearchAction {
     name?: string;
@@ -24,7 +25,8 @@ export class AdversarialExpansion {
 }
 
 export type AdversarialAlgorithmStep = {
-    value: any
+    value: any;
+    sourceLine: number | null;
 };
 
 export abstract class AdversarialSearchSolution implements EditableComponent {
@@ -154,7 +156,7 @@ export abstract class AdversarialSearchSolution implements EditableComponent {
 
     algoStep(debugValue: any = undefined): AdversarialAlgorithmStep {
         this.algorithmBudget--;
-        return {value: debugValue}
+        return { value: debugValue, sourceLine: getEvalCallerLine() };
     }
 
     resetAlgorithmState() {

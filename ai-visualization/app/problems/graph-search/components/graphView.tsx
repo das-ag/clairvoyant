@@ -2,7 +2,7 @@ import { Graph, GridGraph, GenericGraph, EditableGraphComponent, } from "@/lib/g
 import { renderValue } from "@/lib/strings/pretty"
 import { useCallback, useEffect, useState } from "react";
 import VisGraph, { GraphData, Options as VisGraphOptions } from "react-vis-graph-wrapper"
-import Stepper from "./stepper";
+import DebugStepper from "@/app/components/controls/debugStepper";
 import { Font, NodeOptions } from "vis-network";
 import * as vis from 'vis-network'
 import { colorWithAlpha } from "@/lib/utils/colors";
@@ -198,13 +198,14 @@ const nodeCreationProperties: ItemProperty[] = [
     {name: "id", type: "string", value: "", dynamic: true},
 ]
 
-export default function GraphView({graph, logData, stepIndex, totalSteps, onGraphChanged, stepHandler}: {
+export default function GraphView({graph, logData, stepIndex, totalSteps, onGraphChanged, stepHandler, explanation}: {
     graph: Graph | null,
     logData: any,
     stepIndex: number,
     totalSteps: number,
     onGraphChanged: (graph: Graph, visual: boolean) => void,
     stepHandler: (step: number) => void,
+    explanation?: string,
 }) {
     const stringifySteps = () => {
         return `${stepIndex}/${totalSteps}`
@@ -407,7 +408,7 @@ export default function GraphView({graph, logData, stepIndex, totalSteps, onGrap
                 {renderValue(logData)}
             </div>) : <></>}
         </div>
-        <Stepper stepHandler={handleStepCallback} step={stepIndex} maxSteps={totalSteps}></Stepper>
+        <DebugStepper onStepChange={handleStepCallback} step={stepIndex} maxSteps={totalSteps} explanation={explanation} />
     </div>
     )
 }

@@ -1,0 +1,85 @@
+.rbt-svg-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+}
+
+.rbt-svg-container.dragging {
+    cursor: grabbing;
+}
+
+.rbt-reset-view-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 10;
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(30, 41, 59, 0.8);
+    color: white;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.rbt-reset-view-btn:hover {
+    opacity: 1;
+}
+
+/* ── Nodes ── */
+
+.rbt-node-group {
+    /* Position animated via JS (requestAnimationFrame) */
+}
+
+.rbt-node-circle {
+    transition: fill 0.4s ease, stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.rbt-node-text {
+    font-family: monospace;
+    font-size: 13px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.rbt-pointer-label {
+    font-family: monospace;
+    font-size: 10px;
+    pointer-events: none;
+    user-select: none;
+    font-weight: bold;
+}
+
+.rbt-node-enter {
+    animation: rbt-fade-in 0.4s ease forwards;
+}
+
+@keyframes rbt-fade-in {
+    from { opacity: 0; transform: scale(0.5); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Edges ── */
+
+.rbt-edge {
+    transition: stroke 0.3s ease,
+                stroke-width 0.3s ease;
+    stroke-width: 2;
+}
+
+/* Highlighting edges during specific operations */
+.rbt-edge-rotating {
+    stroke-width: 3;
+    stroke-dasharray: 6 3;
+    animation: rbt-edge-pulse 0.3s ease infinite alternate;
+}
+
+@keyframes rbt-edge-pulse {
+    from { opacity: 0.5; }
+    to   { opacity: 1; }
+}

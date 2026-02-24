@@ -1,0 +1,22 @@
+/* ---- Speed input box ---- */
+.debug-stepper-speed-input {
+    width: 3.2rem;
+    text-align: center;
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    padding: 1px 2px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.25rem;
+    background: transparent;
+    color: white;
+    outline: none;
+}
+.debug-stepper-speed-input:focus {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* ---- Auto-play active indicator ---- */
+.debug-stepper-auto-active {
+    background-color: rgba(92, 213, 235, 0.15) !important;
+    border-radius: 0.375rem;
+}

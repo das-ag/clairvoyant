@@ -26,5 +26,11 @@ export const PROBLEMS : Record<string, Problem> = {
         name: "Adversarial Search",
         href: "/problems/adversarial-search",
         docshref: "/docs/adversarial-search"
+    },
+    redblacktree: {
+        id: "redblacktree",
+        name: "Red-Black Tree",
+        href: "/problems/red-black-tree",
+        docshref: "/docs/red-black-tree"
     }
 }

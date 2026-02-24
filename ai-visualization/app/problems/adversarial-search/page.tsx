@@ -58,6 +58,7 @@ export default function GraphSearchPage() {
     })
     let [expansionPlaying, setExpansionPlaying] = useState<boolean>(false);
     let [algorithmPlaying, setAlgorithmPlaying] = useState<boolean>(false);
+    let [activeLine, setActiveLine] = useState<number | null>(null);
 
     let [shownPosition, setShownPosition] = useState<AdversarialSearchPosition | null>(null);
 
@@ -149,9 +150,13 @@ export default function GraphSearchPage() {
                 toast.success("Algorithm complete");
                 externalGraphData.dirty = true;
                 solver.algorithmBudget = 0;
+                setActiveLine(null);
                 break;
             } else {
                 externalGraphData.dirty = true;
+                if (result.value?.sourceLine != null) {
+                    setActiveLine(result.value.sourceLine);
+                }
             }
         }
         
@@ -290,7 +295,7 @@ export default function GraphSearchPage() {
             <Header selectedPage="adversarialsearch"></Header>
             <div className="flex flex-row items-stretch flex-grow">
                 <div className="flex flex-col justify-center" style={{"width": `${leftWidth}px`}}>
-                    <SolutionEditor problem="adversarial-search" solutionHeight={solHeight} onSolutionChanged={onAlgoDataChanged} runner={runGameSetup} errorMessage={algoErrorMessage}></SolutionEditor>
+                    <SolutionEditor problem="adversarial-search" solutionHeight={solHeight} onSolutionChanged={onAlgoDataChanged} runner={runGameSetup} errorMessage={algoErrorMessage} activeLine={activeLine}></SolutionEditor>
                     <HDivider onWidthChangeRequest={function (v: number): void {
                         setSolHeight(solHeight + v);
                     } }></HDivider>
