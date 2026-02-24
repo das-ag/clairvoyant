@@ -30,3 +30,7 @@ export async function getCase(problem: string, caseId: string): Promise<string> 
 export async function getSolution(problem: string, solutionId: string): Promise<string> {
     return await getApiObject<string>(`${API_URL}/${problem}/algorithms/${solutionId}`, "")
 }
+
+export async function getAnnotations(problem: string, solutionId: string): Promise<any[]> {
+    return await getApiObject<any[]>(`${API_URL}/${problem}/algorithms/${solutionId}/annotations`, [])
+}
