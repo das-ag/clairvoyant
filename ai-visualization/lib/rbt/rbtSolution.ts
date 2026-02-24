@@ -91,20 +91,27 @@ export class RBTSolutionBase {
     // ── Core step emission ──────────────────────────────────────────
 
     private _emitBranchIfNeeded(line: number | null): void {
-        if (line === null) return;
+        if (line === null || !this._branchScope) return;
         const branchLine = this._branchScope.get(line);
         if (branchLine === undefined || branchLine === this._lastBranchLine) return;
         this._lastBranchLine = branchLine;
 
         const ann = this._annotations.get(branchLine);
-        if (!ann || (!ann.question && !ann.answer)) return;
+        if (!ann) return;
 
         const ctx = this._buildContext();
-        const q = ann.question ? evaluateTemplate(ann.question, ctx) : undefined;
-        const a = ann.answer ? evaluateTemplate(ann.answer, ctx) : undefined;
-        this.__steps.push(
-            new RBTStep(undefined, undefined, false, branchLine, this._pointerSnapshot(), q, a),
-        );
+        if (ann.question || ann.answer) {
+            const q = ann.question ? evaluateTemplate(ann.question, ctx) : undefined;
+            const a = ann.answer ? evaluateTemplate(ann.answer, ctx) : undefined;
+            this.__steps.push(
+                new RBTStep(undefined, undefined, false, branchLine, this._pointerSnapshot(), q, a),
+            );
+        } else if (ann.msg) {
+            const msg = evaluateTemplate(ann.msg, ctx);
+            this.__steps.push(
+                new RBTStep(msg, undefined, false, branchLine, this._pointerSnapshot()),
+            );
+        }
     }
 
     private _resolveMsg(
@@ -112,7 +119,7 @@ export class RBTSolutionBase {
         autoMsg: string,
         extras?: Record<string, any>,
     ): string {
-        if (line !== null) {
+        if (line !== null && this._annotations) {
             const ann = this._annotations.get(line);
             if (ann?.msg) {
                 return evaluateTemplate(ann.msg, this._buildContext(extras));
@@ -227,6 +234,17 @@ export class RBTSolutionBase {
         this._pushStep(`Remove node ${z.key}`, cmd, false, line, { z });
     }
 
+    /**
+     * Lightweight step marker injected by instrumentCode for lines
+     * that don't already contain a viz method call.
+     */
+    __tick(line: number, extras?: Record<string, any>): void {
+        if (!this.__steps) return;
+        this._emitBranchIfNeeded(line);
+        const msg = this._resolveMsg(line, "", extras);
+        this.__steps.push(new RBTStep(msg, undefined, false, line, this._pointerSnapshot()));
+    }
+
     logStep(ctx?: Record<string, any>): void {
         const line = getEvalCallerLine();
         this._emitBranchIfNeeded(line);
@@ -276,6 +294,67 @@ export class RBTSolutionBase {
     }
 }
 
+// ── Code instrumentation ────────────────────────────────────────────────
+
+const VIZ_METHOD_RE =
+    /\bthis\.(logStep|done|trackPointer|clearPointer|recolor|setRoot|insertNode|linkLeft|linkRight|linkParent|removeNode)\s*\(/;
+
+const INTERNAL_CALL_RE =
+    /\bthis\.(leftRotate|rightRotate|transplant|insertFixup|deleteFixup)\s*\(/;
+
+const IF_ELSE_RE =
+    /^\s*(\}\s*)?(else\s+)?if\s*\(|^\s*(\}\s*)?else\s*(\{|$)/;
+
+const WHILE_RE = /^(\s*)while\s*\(.*\)\s*\{\s*$/;
+
+const SKIP_RE =
+    /^\s*($|\/\/|[{})\]]+;?\s*$|class\s|return\b|break\b|continue\b)/;
+
+const METHOD_DECL_RE = /^\s+(?!while\b|if\b|for\b)\w+\s*\(.*\)\s*\{/;
+
+/**
+ * Insert `this.__tick(lineNum, {params})` on lines that don't already
+ * produce steps, so every meaningful line is visited by the stepper.
+ * Function parameters are captured and forwarded so annotations can
+ * reference them via template expressions (e.g. `${key}`).
+ */
+function instrumentCode(code: string): string {
+    const lines = code.split("\n");
+    let currentParams = "";
+
+    const result = lines.map((line, i) => {
+        const lineNum = i + 1;
+        const trimmed = line.trim();
+
+        if (SKIP_RE.test(trimmed)) return line;
+        if (trimmed.endsWith(".prototype;")) return line;
+
+        const methodMatch = line.match(METHOD_DECL_RE);
+        if (methodMatch && !INTERNAL_CALL_RE.test(line)) {
+            const paramStr = line.match(/\(([^)]*)\)/)?.[1] ?? "";
+            const params = paramStr.split(",").map(p => p.trim()).filter(Boolean);
+            currentParams = params.length ? `, {${params.join(", ")}}` : "";
+            return line;
+        }
+
+        if (VIZ_METHOD_RE.test(line)) return line;
+        if (IF_ELSE_RE.test(trimmed)) return line;
+
+        if (WHILE_RE.test(line)) {
+            return line.replace("{", `{ this.__tick(${lineNum}${currentParams});`);
+        }
+
+        if (INTERNAL_CALL_RE.test(line)) {
+            const indent = line.match(/^(\s*)/)?.[1] ?? "";
+            return `${indent}this.__tick(${lineNum}${currentParams}); ${trimmed}`;
+        }
+
+        return `${line} this.__tick(${lineNum}${currentParams});`;
+    });
+
+    return result.join("\n");
+}
+
 // ── Build from eval'd algorithm code ────────────────────────────────────
 
 export function buildRBTSolution(
@@ -287,7 +366,8 @@ export function buildRBTSolution(
     let result: RBTSolutionBase;
     try {
         "use strict";
-        const solverClass: any = eval?.(code);
+        const instrumented = instrumentCode(code);
+        const solverClass: any = eval?.(instrumented);
         if (solverClass === undefined) {
             throw new Error("Received undefined on eval. Ensure the last line evaluates to the prototype of your class.");
         }
