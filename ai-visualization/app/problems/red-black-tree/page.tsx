@@ -47,6 +47,10 @@ export default function RedBlackTreePage() {
         return val != null ? String(val) : undefined;
     }, [stepIndex, steps]);
 
+    const currentStep = stepIndex > 0 && steps.length > 0 ? steps[stepIndex - 1] : undefined;
+    const question = currentStep?.question;
+    const answer = currentStep?.answer;
+
     const watchEntries: WatchEntry[] = useMemo(() => {
         if (stepIndex <= 0 || steps.length === 0) return [];
         const snap = steps[stepIndex - 1]?.pointerSnapshot ?? {};
@@ -277,6 +281,8 @@ export default function RedBlackTreePage() {
                                         step={stepIndex}
                                         maxSteps={steps.length}
                                         explanation={explanation}
+                                        question={question}
+                                        answer={answer}
                                         onStepChange={onStepChange}
                                     />
                                 </div>

@@ -21,6 +21,8 @@ export class RBTStep {
     isTerminal: boolean;
     /** Snapshot of pointer labels at this step (for watch panel). */
     pointerSnapshot: Record<string, string>;
+    question?: string;
+    answer?: string;
 
     constructor(
         debugValue: any = null,
@@ -28,12 +30,16 @@ export class RBTStep {
         isTerminal = false,
         sourceLine: number | null = null,
         pointerSnapshot: Record<string, string> = {},
+        question?: string,
+        answer?: string,
     ) {
         this.debugValue = debugValue;
         this.command = command;
         this.isTerminal = isTerminal;
         this.sourceLine = sourceLine;
         this.pointerSnapshot = pointerSnapshot;
+        this.question = question;
+        this.answer = answer;
     }
 }
 
@@ -128,6 +134,12 @@ export class RBTSolutionBase {
         const cmd = new UntrackNodeCommand(z);
         cmd.execute(this.tree);
         this._pushStep(msg, cmd, false, line);
+    }
+
+    branch(question: string, answer: string, msg?: string): void {
+        const line = getEvalCallerLine();
+        const step = new RBTStep(msg, undefined, false, line, this._pointerSnapshot(), question, answer);
+        this.__steps.push(step);
     }
 
     logStep(msg: string): void {

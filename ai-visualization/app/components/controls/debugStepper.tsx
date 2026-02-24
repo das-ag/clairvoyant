@@ -18,6 +18,8 @@ export interface DebugStepperProps {
     step: number;
     maxSteps: number;
     explanation?: string;
+    question?: string;
+    answer?: string;
     onStepChange: (step: number) => void;
 }
 
@@ -25,7 +27,7 @@ function clampSpeed(v: number) {
     return Math.max(MIN_INTERVAL_MS, Math.min(MAX_INTERVAL_MS, v));
 }
 
-export default function DebugStepper({ step, maxSteps, explanation, onStepChange }: DebugStepperProps) {
+export default function DebugStepper({ step, maxSteps, explanation, question, answer, onStepChange }: DebugStepperProps) {
     const [playing, setPlaying] = useState(false);
     const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
     const [speedInput, setSpeedInput] = useState(String(DEFAULT_INTERVAL_MS));
@@ -129,9 +131,14 @@ export default function DebugStepper({ step, maxSteps, explanation, onStepChange
                 </IconButton>
             </div>
 
-            {/* Explanation panel */}
-            {explanation != null && explanation !== "" ? (
-                <div className="debug-stepper-explanation rounded border p-1.5 mt-1 text-sm max-h-16 overflow-auto border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-950">
+            {/* Branch Q&A panel */}
+            {question ? (
+                <div className="rounded border p-1.5 mt-1 text-sm max-h-24 overflow-auto border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-950">
+                    <div className="text-white/60 italic">Q: {question}</div>
+                    {answer ? <div className="text-white font-semibold mt-0.5">A: {answer}</div> : null}
+                </div>
+            ) : explanation != null && explanation !== "" ? (
+                <div className="rounded border p-1.5 mt-1 text-sm max-h-16 overflow-auto border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-950">
                     {explanation}
                 </div>
             ) : null}
