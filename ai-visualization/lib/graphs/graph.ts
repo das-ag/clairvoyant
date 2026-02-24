@@ -3,6 +3,8 @@ import { CommandHandler } from "../utils/commands";
 import { EditableComponent, ItemProperty, canSetProps } from "../utils/properties";
 import { genericGraphFromNotation, graphFromRaw, gridGraphFromNotation, notationFromGenericGraph, notationFromGridGraph, preprocessGraphNotation, RawGraph } from "./parsing";
 import { GraphEdge, GraphEdgeSimple, GraphNode } from "./components";
+export type { GraphEdge };
+export { GraphEdgeSimple, GraphNode };
 
 export const DIAGONAL_WEIGHT_DISABLED = -1;
 export const DIAGONAL_WEIGHT_CHEBYSHEV = 1;
