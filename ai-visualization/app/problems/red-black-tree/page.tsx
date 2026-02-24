@@ -8,7 +8,7 @@ import WatchPanel, { WatchEntry } from "@/app/components/controls/watchPanel";
 import RBTView from "./components/rbtView";
 import { RBTree } from "@/lib/rbt/rbtree";
 import { RBTStep, RBTSolutionBase, buildRBTSolution } from "@/lib/rbt/rbtSolution";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ensureError } from "@/lib/errors/error";
 import { HDivider, VDivider } from "@/app/components/divider";
 import { toast } from "react-toastify";
@@ -26,6 +26,11 @@ export default function RedBlackTreePage() {
     let [steps, setSteps] = useState<RBTStep[]>([]);
     let [stepIndex, setStepIndex] = useState(0);
     let [renderKey, setRenderKey] = useState(0);
+
+    const stepsRef = useRef(steps);
+    stepsRef.current = steps;
+    const stepIndexRef = useRef(stepIndex);
+    stepIndexRef.current = stepIndex;
     let [insertValue, setInsertValue] = useState("");
     let [deleteValue, setDeleteValue] = useState("");
 
@@ -114,34 +119,41 @@ export default function RedBlackTreePage() {
     // ── Step management ─────────────────────────────────────────────
 
     function finishCurrentSteps() {
-        if (!tree || steps.length === 0) return;
-        while (stepIndex < steps.length) {
-            const step = steps[stepIndex];
+        if (!tree) return;
+        const curSteps = stepsRef.current;
+        let idx = stepIndexRef.current;
+        if (curSteps.length === 0) return;
+        while (idx < curSteps.length) {
+            const step = curSteps[idx];
             if (step.command) step.command.execute(tree);
-            stepIndex++;
+            idx++;
         }
-        setStepIndex(steps.length);
+        stepIndexRef.current = idx;
+        setStepIndex(idx);
         setRenderKey((k) => k + 1);
     }
 
     const onStepChange = useCallback((newStep: number) => {
-        if (!tree || steps.length === 0) return;
-        let idx = stepIndex;
-        const maxIter = steps.length + 1;
+        if (!tree) return;
+        const curSteps = stepsRef.current;
+        let idx = stepIndexRef.current;
+        if (curSteps.length === 0) return;
+        const maxIter = curSteps.length + 1;
         let iter = 0;
-        while (newStep > idx && idx < steps.length && iter++ < maxIter) {
-            const step = steps[idx];
+        while (newStep > idx && idx < curSteps.length && iter++ < maxIter) {
+            const step = curSteps[idx];
             if (step.command) step.command.execute(tree);
             idx++;
         }
         while (newStep < idx && idx > 0 && iter++ < maxIter) {
             idx--;
-            const step = steps[idx];
+            const step = curSteps[idx];
             if (step.command) step.command.revert(tree);
         }
+        stepIndexRef.current = idx;
         setStepIndex(idx);
         setRenderKey((k) => k + 1);
-    }, [tree, steps, stepIndex]);
+    }, [tree]);
 
     // ── Insert / Delete operations ──────────────────────────────────
 
