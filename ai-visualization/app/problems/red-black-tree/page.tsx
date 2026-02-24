@@ -230,54 +230,57 @@ export default function RedBlackTreePage() {
                 <VDivider onWidthChangeRequest={(v) => setLeftWidth(leftWidth + v)} />
 
                 {/* Right panel: viewport */}
-                <div className="flex flex-col flex-grow p-3 m-2 overflow-hidden min-w-0">
-                    {/* Tree visualization */}
-                    <div className="flex-grow relative min-h-0 overflow-hidden">
-                        <RBTView tree={tree} renderKey={renderKey} currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined} />
-                    </div>
+                <div className="relative flex-grow m-2 overflow-hidden min-w-0">
+                    {/* Tree visualization fills entire panel */}
+                    <RBTView tree={tree} renderKey={renderKey} currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined} />
 
-                    {/* Insert / Delete controls */}
-                    <div className="flex flex-row items-center gap-2 mt-2 flex-wrap shrink-0">
-                        <div className="flex items-center gap-1">
-                            <input
-                                type="number"
-                                value={insertValue}
-                                onChange={(e) => setInsertValue(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === "Enter") handleInsert(); }}
-                                placeholder="key"
-                                className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
-                            />
-                            <button onClick={handleInsert} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
-                                Insert
-                            </button>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <input
-                                type="number"
-                                value={deleteValue}
-                                onChange={(e) => setDeleteValue(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === "Enter") handleDelete(); }}
-                                placeholder="key"
-                                className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
-                            />
-                            <button onClick={handleDelete} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
+                    {/* Controls overlay at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+                        <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
+                            {/* Insert / Delete controls */}
+                            <div className="flex flex-row items-center gap-2 flex-wrap">
+                                <div className="flex items-center gap-1">
+                                    <input
+                                        type="number"
+                                        value={insertValue}
+                                        onChange={(e) => setInsertValue(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === "Enter") handleInsert(); }}
+                                        placeholder="key"
+                                        className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
+                                    />
+                                    <button onClick={handleInsert} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
+                                        Insert
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <input
+                                        type="number"
+                                        value={deleteValue}
+                                        onChange={(e) => setDeleteValue(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === "Enter") handleDelete(); }}
+                                        placeholder="key"
+                                        className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
+                                    />
+                                    <button onClick={handleDelete} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
 
-                    {/* Watch + Stepper */}
-                    <div className="flex flex-row gap-2 mt-2 items-start shrink-0 flex-wrap xl:flex-nowrap">
-                        <div className="w-48 shrink-0">
-                            <WatchPanel entries={watchEntries} />
-                        </div>
-                        <div className="flex-grow min-w-0">
-                            <DebugStepper
-                                step={stepIndex}
-                                maxSteps={steps.length}
-                                explanation={explanation}
-                                onStepChange={onStepChange}
-                            />
+                            {/* Watch + Stepper */}
+                            <div className="flex flex-row gap-2 mt-2 items-start flex-wrap xl:flex-nowrap">
+                                <div className="w-48 shrink-0">
+                                    <WatchPanel entries={watchEntries} />
+                                </div>
+                                <div className="flex-grow min-w-0">
+                                    <DebugStepper
+                                        step={stepIndex}
+                                        maxSteps={steps.length}
+                                        explanation={explanation}
+                                        onStepChange={onStepChange}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
