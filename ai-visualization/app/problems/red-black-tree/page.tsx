@@ -40,6 +40,8 @@ export default function RedBlackTreePage() {
     let [renderKey, setRenderKey] = useState(0);
     let [playing, setPlaying] = useState(false);
     const fitRef = useRef<(() => void) | null>(null);
+    const hasAutoRun = useRef(false);
+    const runBuildRef = useRef<() => void>(() => {});
 
     const stepsRef = useRef(steps);
     stepsRef.current = steps;
@@ -191,6 +193,15 @@ export default function RedBlackTreePage() {
         toast.success(`Tree built with ${keys.length} keys`);
     }
 
+    runBuildRef.current = runBuild;
+
+    useEffect(() => {
+        if (algoData && caseData && !hasAutoRun.current) {
+            hasAutoRun.current = true;
+            runBuildRef.current();
+        }
+    }, [algoData, caseData]);
+
     // ── Step management ─────────────────────────────────────────────
 
     function finishCurrentSteps() {
@@ -334,6 +345,18 @@ export default function RedBlackTreePage() {
                         </button>
                     </div>
 
+                    {/* Top-center: Annotation */}
+                    {question ? (
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-md w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-sm">
+                            <div className="text-white/60 italic">Q: {question}</div>
+                            {answer && <div className="text-white font-semibold mt-0.5">A: {answer}</div>}
+                        </div>
+                    ) : explanation ? (
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-md w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm">
+                            {explanation}
+                        </div>
+                    ) : null}
+
                     {/* Top-right: Case Tracker */}
                     <div className="absolute top-3 right-3 z-20">
                         <CaseTracker cases={caseStack} onJumpToStep={onStepChange} />
@@ -381,9 +404,6 @@ export default function RedBlackTreePage() {
                                     <DebugStepper
                                         step={stepIndex}
                                         maxSteps={steps.length}
-                                        explanation={explanation}
-                                        question={question}
-                                        answer={answer}
                                         playing={playing}
                                         onPlayingChange={setPlaying}
                                         onStepChange={onStepChange}

@@ -75,7 +75,8 @@ export default function CaseEditor({problem, errorMessage, caseData, onCaseDataC
             <Select unstyled className="flex-grow" classNames={{
                 control: (state) => {return `${buttonStyleClassNames} rounded pl-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`}, 
                 option: (state) => {return `${buttonStyleClassNames} p-1`}}}
-                options={defaultCases.map(n => {return {value: n, label: formatPrettyFile(n)}})}   
+                options={defaultCases.map(n => {return {value: n, label: formatPrettyFile(n)}})}
+                value={caseId ? { value: caseId, label: formatPrettyFile(caseId) } : null}
                 onChange={e => {setCaseId(e?.value ?? ""); fetchCaseData(problem, e?.value ?? "");}}>
             </Select>
             <ClipboardButton textToCopy={caseData} className={`${buttonStyleClassNames} border-2 border-solid border-secondary-50 dark:border-secondary-950 min-w-8 ml-1 rounded px-2`}></ClipboardButton>

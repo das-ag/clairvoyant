@@ -74,9 +74,12 @@ export default function SolutionEditor({
         getSolutions(problem)
         .then(responseCases => {
             setDefaultAlgorithms(responseCases);
-            setAlgoId(responseCases[0])
+            if (responseCases.length > 0) {
+                setAlgoId(responseCases[0]);
+                fetchAlgorithm(problem, responseCases[0]);
+            }
         })
-    }, [problem])
+    }, [problem, fetchAlgorithm])
 
     return (
     <div className="flex flex-col items-stretch">
@@ -90,7 +93,8 @@ export default function SolutionEditor({
                     control: (state) => {return `${buttonStyleClassNames} rounded pl-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`}, 
                     option: (state) => {return `${buttonStyleClassNames} p-1`}
                 }}
-                options={defaultAlgorithms.map(n => {return {value: n, label: formatPrettyFile(n)}})} 
+                options={defaultAlgorithms.map(n => {return {value: n, label: formatPrettyFile(n)}})}
+                value={algoId ? { value: algoId, label: formatPrettyFile(algoId) } : null}
                 onChange={e => {setAlgoId(e?.value ?? ""); fetchAlgorithm(problem, e?.value ?? "");}}>
             </Select>
             <button onClick={runner} className={`${buttonStyleClassNames} rounded px-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`}>
