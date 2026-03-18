@@ -103,6 +103,7 @@ class RBTSolution {
 
                 if (uncle.color === "RED") {
                     // Case 1: uncle is red — recolor and move z up
+                    this.logCase("Insert Case 1");
                     this.recolor(z.parent, "BLACK");
                     this.recolor(uncle, "BLACK");
                     this.recolor(z.parent.parent, "RED");
@@ -110,10 +111,12 @@ class RBTSolution {
                 } else {
                     if (z === z.parent.right) {
                         // Case 2: z is a right child — rotate to reduce to Case 3
+                        this.logCase("Insert Case 2");
                         z = this.trackPointer("z", z.parent);
                         this.leftRotate(z);
                     }
                     // Case 3: recolor and right-rotate
+                    this.logCase("Insert Case 3");
                     this.recolor(z.parent, "BLACK");
                     this.recolor(z.parent.parent, "RED");
                     this.rightRotate(z.parent.parent);
@@ -124,6 +127,7 @@ class RBTSolution {
 
                 if (uncle.color === "RED") {
                     // Case 1 (sym)
+                    this.logCase("Insert Case 1");
                     this.recolor(z.parent, "BLACK");
                     this.recolor(uncle, "BLACK");
                     this.recolor(z.parent.parent, "RED");
@@ -131,10 +135,12 @@ class RBTSolution {
                 } else {
                     if (z === z.parent.left) {
                         // Case 2 (sym)
+                        this.logCase("Insert Case 2");
                         z = this.trackPointer("z", z.parent);
                         this.rightRotate(z);
                     }
                     // Case 3 (sym)
+                    this.logCase("Insert Case 3");
                     this.recolor(z.parent, "BLACK");
                     this.recolor(z.parent.parent, "RED");
                     this.leftRotate(z.parent.parent);
@@ -211,6 +217,7 @@ class RBTSolution {
 
                 if (w.color === "RED") {
                     // Case 1: sibling w is red
+                    this.logCase("Delete Case 1");
                     this.recolor(w, "BLACK");
                     this.recolor(x.parent, "RED");
                     this.leftRotate(x.parent);
@@ -219,17 +226,20 @@ class RBTSolution {
 
                 if (w.left.color === "BLACK" && w.right.color === "BLACK") {
                     // Case 2: both of w's children are black
+                    this.logCase("Delete Case 2");
                     this.recolor(w, "RED");
                     x = this.trackPointer("x", x.parent);
                 } else {
                     if (w.right.color === "BLACK") {
                         // Case 3: w.right is black — rotate to set up Case 4
+                        this.logCase("Delete Case 3");
                         this.recolor(w.left, "BLACK");
                         this.recolor(w, "RED");
                         this.rightRotate(w);
                         w = this.trackPointer("w", x.parent.right);
                     }
                     // Case 4: w.right is red — final fix
+                    this.logCase("Delete Case 4");
                     this.recolor(w, x.parent.color);
                     this.recolor(x.parent, "BLACK");
                     this.recolor(w.right, "BLACK");
@@ -242,6 +252,7 @@ class RBTSolution {
 
                 if (w.color === "RED") {
                     // Case 1 (sym)
+                    this.logCase("Delete Case 1");
                     this.recolor(w, "BLACK");
                     this.recolor(x.parent, "RED");
                     this.rightRotate(x.parent);
@@ -250,17 +261,20 @@ class RBTSolution {
 
                 if (w.right.color === "BLACK" && w.left.color === "BLACK") {
                     // Case 2 (sym)
+                    this.logCase("Delete Case 2");
                     this.recolor(w, "RED");
                     x = this.trackPointer("x", x.parent);
                 } else {
                     if (w.left.color === "BLACK") {
                         // Case 3 (sym)
+                        this.logCase("Delete Case 3");
                         this.recolor(w.right, "BLACK");
                         this.recolor(w, "RED");
                         this.leftRotate(w);
                         w = this.trackPointer("w", x.parent.left);
                     }
                     // Case 4 (sym)
+                    this.logCase("Delete Case 4");
                     this.recolor(w, x.parent.color);
                     this.recolor(x.parent, "BLACK");
                     this.recolor(w.left, "BLACK");

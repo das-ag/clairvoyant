@@ -123,6 +123,15 @@ export default function RedBlackTreeDocs() {
                         local variables that should be available in the annotation template, e.g.
                         {" "}<code>{"this.logStep({key})"}</code>.</p>
                     </DocsFunction>
+                    <DocsFunction clazzName="RBTSolution" functionName="logCase" args={[
+                        { name: "label", type: ConstDocString }
+                    ]}>
+                        <p>Records a fixup case entry. The <code>label</code> (e.g. <code>&quot;Insert Case 1&quot;</code>)
+                        is displayed in a color-coded badge in the top-right corner of the viewport.
+                        The badge tracks all cases encountered during the current operation and can be
+                        expanded to see the full history. Cases are cleared automatically when a new
+                        insert or delete begins.</p>
+                    </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="done" args={[
                         { name: "ctx", type: RecordType, default: undefined, showDefault: true }
                     ]}>

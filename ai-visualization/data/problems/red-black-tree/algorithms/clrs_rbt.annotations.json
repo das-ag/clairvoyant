@@ -878,5 +878,91 @@
     "fn": "deleteFixup",
     "anchor": "this.recolor(x, \"BLACK\");",
     "annotation": { "msg": "Ensure x is BLACK" }
+  },
+
+  {
+    "fn": "insertFixup",
+    "anchor": "this.logCase(\"Insert Case 1\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Insert Case 1: uncle is RED — recolor" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.logCase(\"Insert Case 2\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Insert Case 2: z is an inner child — rotate" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.logCase(\"Insert Case 3\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Insert Case 3: z is an outer child — recolor and rotate" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.logCase(\"Insert Case 1\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Insert Case 1: uncle is RED — recolor (symmetric)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.logCase(\"Insert Case 2\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Insert Case 2: z is an inner child — rotate (symmetric)" }
+  },
+  {
+    "fn": "insertFixup",
+    "anchor": "this.logCase(\"Insert Case 3\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Insert Case 3: z is an outer child — recolor and rotate (symmetric)" }
+  },
+
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.logCase(\"Delete Case 1\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Delete Case 1: sibling w is RED" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.logCase(\"Delete Case 2\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Delete Case 2: both of w's children are BLACK" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.logCase(\"Delete Case 3\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Delete Case 3: w's far child is BLACK — rotate" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.logCase(\"Delete Case 4\");",
+    "occurrence": 0,
+    "annotation": { "msg": "Delete Case 4: w's far child is RED — final fix" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.logCase(\"Delete Case 1\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Delete Case 1: sibling w is RED (symmetric)" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.logCase(\"Delete Case 2\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Delete Case 2: both of w's children are BLACK (symmetric)" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.logCase(\"Delete Case 3\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Delete Case 3: w's far child is BLACK — rotate (symmetric)" }
+  },
+  {
+    "fn": "deleteFixup",
+    "anchor": "this.logCase(\"Delete Case 4\");",
+    "occurrence": 1,
+    "annotation": { "msg": "Delete Case 4: w's far child is RED — final fix (symmetric)" }
   }
 ]

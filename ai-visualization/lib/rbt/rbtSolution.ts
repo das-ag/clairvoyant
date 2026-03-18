@@ -28,6 +28,8 @@ export class RBTStep {
     pointerSnapshot: Record<string, string>;
     question?: string;
     answer?: string;
+    /** Fixup case label (e.g. "Insert Case 1") when entering a new case. */
+    caseLabel?: string;
 
     constructor(
         debugValue: any = null,
@@ -253,6 +255,15 @@ export class RBTSolutionBase {
         this.__steps.push(new RBTStep(msg, undefined, false, line, this._pointerSnapshot()));
     }
 
+    logCase(label: string): void {
+        const line = getEvalCallerLine();
+        this._emitBranchIfNeeded(line);
+        const msg = this._resolveMsg(line, label);
+        const step = new RBTStep(msg, undefined, false, line, this._pointerSnapshot());
+        step.caseLabel = label;
+        this.__steps.push(step);
+    }
+
     done(ctx?: Record<string, any>): void {
         const line = getEvalCallerLine();
         this._emitBranchIfNeeded(line);
@@ -298,7 +309,7 @@ export class RBTSolutionBase {
 // ── Code instrumentation ────────────────────────────────────────────────
 
 const VIZ_METHOD_RE =
-    /\bthis\.(logStep|done|trackPointer|clearPointer|recolor|setRoot|insertNode|linkLeft|linkRight|linkParent|removeNode)\s*\(/;
+    /\bthis\.(logStep|logCase|done|trackPointer|clearPointer|recolor|setRoot|insertNode|linkLeft|linkRight|linkParent|removeNode)\s*\(/;
 
 const INTERNAL_CALL_RE =
     /\bthis\.(leftRotate|rightRotate|transplant|insertFixup|deleteFixup)\s*\(/;

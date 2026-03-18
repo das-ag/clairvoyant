@@ -24,6 +24,7 @@ import {
 } from "@/lib/rbt/rbtAnnotations";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
+import CaseTracker, { CaseEntry } from "@/app/components/controls/caseTracker";
 
 export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
@@ -38,6 +39,7 @@ export default function RedBlackTreePage() {
     let [stepIndex, setStepIndex] = useState(0);
     let [renderKey, setRenderKey] = useState(0);
     let [playing, setPlaying] = useState(false);
+    const fitRef = useRef<(() => void) | null>(null);
 
     const stepsRef = useRef(steps);
     stepsRef.current = steps;
@@ -122,6 +124,16 @@ export default function RedBlackTreePage() {
                 color: isRed ? "#ef4444" : isBlack ? "#94a3b8" : undefined,
             };
         });
+    }, [stepIndex, steps]);
+
+    const caseStack: CaseEntry[] = useMemo(() => {
+        const result: CaseEntry[] = [];
+        for (let i = 0; i < stepIndex && i < steps.length; i++) {
+            if (steps[i].caseLabel) {
+                result.push({ label: steps[i].caseLabel!, stepIndex: i + 1 });
+            }
+        }
+        return result;
     }, [stepIndex, steps]);
 
     // ── Case parsing ────────────────────────────────────────────────
@@ -301,18 +313,31 @@ export default function RedBlackTreePage() {
                 {/* Right panel: viewport */}
                 <div className="relative flex-grow m-2 overflow-hidden min-w-0">
                     {/* Tree visualization fills entire panel */}
-                    <RBTView tree={tree} renderKey={renderKey} currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined} />
+                    <RBTView tree={tree} renderKey={renderKey} currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined} onFitRef={fitRef} />
 
-                    {/* Play/Pause floating button */}
-                    {steps.length > 0 && (
+                    {/* Top-left: Play/Pause + Fit */}
+                    <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
+                        {steps.length > 0 && (
+                            <button
+                                onClick={() => setPlaying(p => !p)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm hover:bg-primary-900/90 transition-colors cursor-pointer"
+                            >
+                                {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                                <span>{playing ? "Pause" : "Play"} animation</span>
+                            </button>
+                        )}
                         <button
-                            onClick={() => setPlaying(p => !p)}
-                            className="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm hover:bg-primary-900/90 transition-colors cursor-pointer"
+                            onClick={() => fitRef.current?.()}
+                            className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
                         >
-                            {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
-                            <span>{playing ? "Pause" : "Play"} animation</span>
+                            Fit
                         </button>
-                    )}
+                    </div>
+
+                    {/* Top-right: Case Tracker */}
+                    <div className="absolute top-3 right-3 z-20">
+                        <CaseTracker cases={caseStack} onJumpToStep={onStepChange} />
+                    </div>
 
                     {/* Controls overlay at bottom */}
                     <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">

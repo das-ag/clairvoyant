@@ -10,26 +10,6 @@
     cursor: grabbing;
 }
 
-.rbt-reset-view-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    z-index: 10;
-    padding: 2px 8px;
-    font-size: 11px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: rgba(30, 41, 59, 0.8);
-    color: white;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-
-.rbt-reset-view-btn:hover {
-    opacity: 1;
-}
-
 /* ── Nodes ── */
 
 .rbt-node-group {

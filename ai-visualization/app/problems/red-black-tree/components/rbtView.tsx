@@ -70,6 +70,7 @@ interface RBTViewProps {
     tree: RBTree | null;
     renderKey: number;
     currentStep?: RBTStep;
+    onFitRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 function computeBoundsViewBox(layout: Map<RBNode, NodePosition>, pad = 50): ViewBox {
@@ -103,7 +104,7 @@ function computeBoundsViewBox(layout: Map<RBNode, NodePosition>, pad = 50): View
     return { x, y, w, h };
 }
 
-export default function RBTView({ tree, renderKey, currentStep }: RBTViewProps) {
+export default function RBTView({ tree, renderKey, currentStep, onFitRef }: RBTViewProps) {
     // Zoom/pan state
     const [viewBox, setViewBox] = useState<ViewBox>({ x: -200, y: -50, w: 400, h: 300 });
     const [isDragging, setIsDragging] = useState(false);
@@ -158,6 +159,10 @@ export default function RBTView({ tree, renderKey, currentStep }: RBTViewProps) 
         setViewBox(vb);
         userTransformedRef.current = false;
     }, [finalLayout]);
+
+    useEffect(() => {
+        if (onFitRef) onFitRef.current = fitToContent;
+    }, [onFitRef, fitToContent]);
 
     // Auto-fit viewBox when layout changes (unless user has manually panned/zoomed)
     useEffect(() => {
@@ -364,13 +369,6 @@ export default function RBTView({ tree, renderKey, currentStep }: RBTViewProps) 
 
     return (
         <div className={containerClass}>
-            <button
-                className="rbt-reset-view-btn"
-                onClick={fitToContent}
-                title="Reset view"
-            >
-                Fit
-            </button>
             <svg
                 ref={svgRef}
                 viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
