@@ -22,6 +22,8 @@ import {
     unresolveAnnotation,
     buildBranchScopeMap,
 } from "@/lib/rbt/rbtAnnotations";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PauseIcon from "@mui/icons-material/Pause";
 
 export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
@@ -35,6 +37,7 @@ export default function RedBlackTreePage() {
     let [steps, setSteps] = useState<RBTStep[]>([]);
     let [stepIndex, setStepIndex] = useState(0);
     let [renderKey, setRenderKey] = useState(0);
+    let [playing, setPlaying] = useState(false);
 
     const stepsRef = useRef(steps);
     stepsRef.current = steps;
@@ -228,6 +231,7 @@ export default function RedBlackTreePage() {
             setSteps(newSteps);
             setStepIndex(0);
             setRenderKey((k) => k + 1);
+            setPlaying(true);
         } catch (err) {
             const error = ensureError(err);
             toast.error(`Insert error: ${error.message}`);
@@ -245,6 +249,7 @@ export default function RedBlackTreePage() {
             setSteps(newSteps);
             setStepIndex(0);
             setRenderKey((k) => k + 1);
+            setPlaying(true);
         } catch (err) {
             const error = ensureError(err);
             toast.error(`Delete error: ${error.message}`);
@@ -298,6 +303,17 @@ export default function RedBlackTreePage() {
                     {/* Tree visualization fills entire panel */}
                     <RBTView tree={tree} renderKey={renderKey} currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined} />
 
+                    {/* Play/Pause floating button */}
+                    {steps.length > 0 && (
+                        <button
+                            onClick={() => setPlaying(p => !p)}
+                            className="absolute top-3 left-3 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm hover:bg-primary-900/90 transition-colors cursor-pointer"
+                        >
+                            {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                            <span>{playing ? "Pause" : "Play"} animation</span>
+                        </button>
+                    )}
+
                     {/* Controls overlay at bottom */}
                     <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
                         <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
@@ -343,6 +359,8 @@ export default function RedBlackTreePage() {
                                         explanation={explanation}
                                         question={question}
                                         answer={answer}
+                                        playing={playing}
+                                        onPlayingChange={setPlaying}
                                         onStepChange={onStepChange}
                                     />
                                 </div>

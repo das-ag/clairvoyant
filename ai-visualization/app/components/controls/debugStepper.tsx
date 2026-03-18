@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "@mui/material";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import PauseIcon from "@mui/icons-material/Pause";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -20,6 +18,8 @@ export interface DebugStepperProps {
     explanation?: string;
     question?: string;
     answer?: string;
+    playing?: boolean;
+    onPlayingChange?: (playing: boolean) => void;
     onStepChange: (step: number) => void;
 }
 
@@ -27,8 +27,10 @@ function clampSpeed(v: number) {
     return Math.max(MIN_INTERVAL_MS, Math.min(MAX_INTERVAL_MS, v));
 }
 
-export default function DebugStepper({ step, maxSteps, explanation, question, answer, onStepChange }: DebugStepperProps) {
-    const [playing, setPlaying] = useState(false);
+export default function DebugStepper({ step, maxSteps, explanation, question, answer, playing: playingProp, onPlayingChange: onPlayingChangeProp, onStepChange }: DebugStepperProps) {
+    const [internalPlaying, setInternalPlaying] = useState(false);
+    const playing = playingProp ?? internalPlaying;
+    const onPlayingChange = onPlayingChangeProp ?? setInternalPlaying;
     const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
     const [speedInput, setSpeedInput] = useState(String(DEFAULT_INTERVAL_MS));
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -57,7 +59,7 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
             const cur = stepRef.current;
             const max = maxRef.current;
             if (cur >= max) {
-                setPlaying(false);
+                onPlayingChange(false);
                 return;
             }
             onStepChange(cur + 1);
@@ -65,11 +67,11 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [playing, intervalMs, onStepChange]);
+    }, [playing, intervalMs, onStepChange, onPlayingChange]);
 
     useEffect(() => {
-        if (step >= maxSteps) setPlaying(false);
-    }, [step, maxSteps]);
+        if (step >= maxSteps) onPlayingChange(false);
+    }, [step, maxSteps, onPlayingChange]);
 
     const commitSpeedInput = () => {
         const parsed = parseInt(speedInput, 10);
@@ -87,10 +89,10 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
             <div className="flex items-center justify-between gap-2 px-1">
                 {/* Step back / forward */}
                 <div className={`flex items-center gap-0.5${navDisabled ? " opacity-40" : ""}`}>
-                    <IconButton size="small" sx={{ color: "white" }} onClick={() => goTo(step - 1)} disabled={navDisabled} aria-label="Step back">
+                    <IconButton size="small" sx={{ color: "white" }} onClick={() => { onPlayingChange(false); goTo(step - 1); }} disabled={navDisabled} aria-label="Step back">
                         <NavigateBeforeIcon fontSize="small" />
                     </IconButton>
-                    <IconButton size="small" sx={{ color: "white" }} onClick={() => goTo(step + 1)} disabled={navDisabled} aria-label="Step forward">
+                    <IconButton size="small" sx={{ color: "white" }} onClick={() => { onPlayingChange(false); goTo(step + 1); }} disabled={navDisabled} aria-label="Step forward">
                         <NavigateNextIcon fontSize="small" />
                     </IconButton>
                 </div>
@@ -119,16 +121,6 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
                     <span className="text-[10px] text-white opacity-70 ml-0.5">ms</span>
                 </div>
 
-                {/* Auto-play toggle */}
-                <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() => setPlaying((p) => !p)}
-                    aria-label={playing ? "Pause auto-play" : "Start auto-play"}
-                    className={playing ? "debug-stepper-auto-active" : ""}
-                >
-                    {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
-                </IconButton>
             </div>
 
             {/* Branch Q&A panel */}
