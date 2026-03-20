@@ -29,8 +29,8 @@ import CaseTracker, { CaseEntry } from "@/app/components/controls/caseTracker";
 export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
     let [solution, setSolution] = useState<RBTSolutionBase | null>(null);
-    let [leftWidth, setLeftWidth] = useState(480);
-    let [solHeight, setSolHeight] = useState(300);
+    let [leftWidth, setLeftWidth] = useState(550);
+    let [solHeight, setSolHeight] = useState(500);
     let [caseErrorMessage, setCaseErrorMessage] = useState("");
     let [algoErrorMessage, setAlgoErrorMessage] = useState("");
     let [caseData, setCaseData] = useState("");
