@@ -12,7 +12,6 @@ class RBTSolution {
         this.logStep({x});
         this.trackPointer("lr.x", x);
         let y = this.trackPointer("lr.y", x.right);
-        // Animate the edge rewires as one connected rotation transaction
         this.rotateLeftTransaction(x, y);
         this.clearPointer("lr.x");
         this.clearPointer("lr.y");
@@ -24,7 +23,6 @@ class RBTSolution {
         this.logStep({y});
         this.trackPointer("rr.y", y);
         let x = this.trackPointer("rr.x", y.left);
-        // Animate the edge rewires as one connected rotation transaction
         this.rotateRightTransaction(y, x);
         this.clearPointer("rr.x");
         this.clearPointer("rr.y");
