@@ -40,7 +40,19 @@ interface CaseTrackerProps {
 
 export default function CaseTracker({ cases, onJumpToStep }: CaseTrackerProps) {
     const [expanded, setExpanded] = useState(false);
+    const [glowing, setGlowing] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const prevCountRef = useRef(0);
+
+    useEffect(() => {
+        if (cases.length > prevCountRef.current) {
+            setGlowing(true);
+            const timer = setTimeout(() => setGlowing(false), 1500);
+            prevCountRef.current = cases.length;
+            return () => clearTimeout(timer);
+        }
+        prevCountRef.current = cases.length;
+    }, [cases.length]);
 
     useEffect(() => {
         if (!expanded) return;
@@ -64,7 +76,12 @@ export default function CaseTracker({ cases, onJumpToStep }: CaseTrackerProps) {
             <button
                 onClick={() => setExpanded(e => !e)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-md cursor-pointer transition-opacity hover:opacity-90"
-                style={{ backgroundColor: bg, color: dark ? "#1e293b" : "#fff" }}
+                style={{
+                    backgroundColor: bg,
+                    color: dark ? "#1e293b" : "#fff",
+                    boxShadow: glowing ? `0 0 16px 6px ${bg}80` : undefined,
+                    transition: "box-shadow 0.4s ease-in-out",
+                }}
             >
                 <span>{latest.label}</span>
                 {cases.length > 1 && (

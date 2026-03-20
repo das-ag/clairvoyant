@@ -138,6 +138,12 @@ export default function RedBlackTreePage() {
         return result;
     }, [stepIndex, steps]);
 
+    const caseStepIndices = useMemo(() => {
+        const set = new Set<number>();
+        steps.forEach((s, i) => { if (s.caseLabel) set.add(i + 1); });
+        return set;
+    }, [steps]);
+
     // ── Case parsing ────────────────────────────────────────────────
 
     function parseCase(raw: string): number[] | null {
@@ -412,6 +418,7 @@ export default function RedBlackTreePage() {
                                         playing={playing}
                                         onPlayingChange={setPlaying}
                                         onStepChange={onStepChange}
+                                        caseSteps={caseStepIndices}
                                     />
                                 </div>
                             </div>

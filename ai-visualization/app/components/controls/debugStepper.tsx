@@ -21,19 +21,20 @@ export interface DebugStepperProps {
     playing?: boolean;
     onPlayingChange?: (playing: boolean) => void;
     onStepChange: (step: number) => void;
+    caseSteps?: Set<number>;
 }
 
 function clampSpeed(v: number) {
     return Math.max(MIN_INTERVAL_MS, Math.min(MAX_INTERVAL_MS, v));
 }
 
-export default function DebugStepper({ step, maxSteps, explanation, question, answer, playing: playingProp, onPlayingChange: onPlayingChangeProp, onStepChange }: DebugStepperProps) {
+export default function DebugStepper({ step, maxSteps, explanation, question, answer, playing: playingProp, onPlayingChange: onPlayingChangeProp, onStepChange, caseSteps }: DebugStepperProps) {
     const [internalPlaying, setInternalPlaying] = useState(false);
     const playing = playingProp ?? internalPlaying;
     const onPlayingChange = onPlayingChangeProp ?? setInternalPlaying;
     const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
     const [speedInput, setSpeedInput] = useState(String(DEFAULT_INTERVAL_MS));
-    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const stepRef = useRef(step);
     stepRef.current = step;
     const maxRef = useRef(maxSteps);
@@ -49,23 +50,31 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
         setSpeedInput(String(clamped));
     }, []);
 
+    const caseStepsRef = useRef(caseSteps);
+    caseStepsRef.current = caseSteps;
+
     useEffect(() => {
         if (!playing) {
-            if (timerRef.current) clearInterval(timerRef.current);
+            if (timerRef.current) clearTimeout(timerRef.current);
             timerRef.current = null;
             return;
         }
-        timerRef.current = setInterval(() => {
+        function scheduleNext() {
             const cur = stepRef.current;
             const max = maxRef.current;
             if (cur >= max) {
                 onPlayingChange(false);
                 return;
             }
-            onStepChange(cur + 1);
-        }, intervalMs);
+            const delay = caseStepsRef.current?.has(cur) ? intervalMs * 2 : intervalMs;
+            timerRef.current = setTimeout(() => {
+                onStepChange(cur + 1);
+                scheduleNext();
+            }, delay);
+        }
+        scheduleNext();
         return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
+            if (timerRef.current) clearTimeout(timerRef.current);
         };
     }, [playing, intervalMs, onStepChange, onPlayingChange]);
 
