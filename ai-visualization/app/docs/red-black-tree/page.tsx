@@ -61,6 +61,10 @@ export default function RedBlackTreeDocs() {
                         Each method auto-generates a descriptive message from its arguments. You can override or customize these messages
                         using the <a href="#annotations">annotation system</a>.
                     </p>
+                    <p className="mb-3 opacity-80">
+                        Prefer the transaction helpers for rotations, transplant, and delete rewires. They keep the tree connected,
+                        move edges before nodes when appropriate, and produce more stable layouts for the visualizer.
+                    </p>
 
                     <DocsFunction clazzName="RBTSolution" functionName="insertNode" args={[
                         { name: "z", type: RBNodeType }
@@ -70,7 +74,7 @@ export default function RedBlackTreeDocs() {
                     <DocsFunction clazzName="RBTSolution" functionName="removeNode" args={[
                         { name: "z", type: RBNodeType }
                     ]}>
-                        <p>Marks a node as removed from the tree. The node will fade out in the visualizer.</p>
+                        <p>Marks a node as removed from the visualization. In the current transaction model, this should be the point where the deleted node actually disappears from the rendered tree.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="recolor" args={[
                         { name: "node", type: RBNodeType },
@@ -78,23 +82,32 @@ export default function RedBlackTreeDocs() {
                     ]}>
                         <p>Changes the color of a node. Use <code>&quot;RED&quot;</code> or <code>&quot;BLACK&quot;</code> as the color value.</p>
                     </DocsFunction>
-                    <DocsFunction clazzName="RBTSolution" functionName="linkLeft" args={[
-                        { name: "parent", type: RBNodeType },
-                        { name: "child", type: RBNodeType }
+                    <DocsFunction clazzName="RBTSolution" functionName="rotateLeftTransaction" args={[
+                        { name: "x", type: RBNodeType },
+                        { name: "y", type: RBNodeType }
                     ]}>
-                        <p>Sets <code>parent.left = child</code>. Use this for rotation and transplant implementations.</p>
+                        <p>Animates a full left rotation as one coordinated transaction. The visualizer first rewires the affected edges, then relayouts the connected tree as a whole.</p>
                     </DocsFunction>
-                    <DocsFunction clazzName="RBTSolution" functionName="linkRight" args={[
-                        { name: "parent", type: RBNodeType },
-                        { name: "child", type: RBNodeType }
+                    <DocsFunction clazzName="RBTSolution" functionName="rotateRightTransaction" args={[
+                        { name: "y", type: RBNodeType },
+                        { name: "x", type: RBNodeType }
                     ]}>
-                        <p>Sets <code>parent.right = child</code>. Use this for rotation and transplant implementations.</p>
+                        <p>Animates a full right rotation as one coordinated transaction. This is the right-rotation counterpart to <code>rotateLeftTransaction</code>.</p>
                     </DocsFunction>
-                    <DocsFunction clazzName="RBTSolution" functionName="linkParent" args={[
+                    <DocsFunction clazzName="RBTSolution" functionName="transplantTransaction" args={[
+                        { name: "oldNode", type: RBNodeType },
+                        { name: "newNode", type: RBNodeType }
+                    ]}>
+                        <p>Animates transplant as a tree-connected replacement step.</p>
+                    </DocsFunction>
+                    <DocsFunction clazzName="RBTSolution" functionName="moveEdgeTransaction" args={[
+                        { name: "parent", type: RBNodeType },
+                        { name: "side", type: ConstDocString },
                         { name: "child", type: RBNodeType },
-                        { name: "parent", type: RBNodeType }
+                        { name: "carryNodes", type: docArrayOf(RBNodeType), default: [], showDefault: true }
                     ]}>
-                        <p>Sets <code>child.parent = parent</code>. Use this for rotation and transplant implementations.</p>
+                        <p>Moves one child edge as a transaction-aware visual step. This is useful in delete/transplant flows where an edge should move coherently and some nodes must remain visible until a later <code>removeNode</code> call.</p>
+                        <p><code>side</code> must be <code>&quot;left&quot;</code> or <code>&quot;right&quot;</code>. Pass affected nodes in <code>carryNodes</code> if they should remain visible through the transaction even after they stop being reachable from the root.</p>
                     </DocsFunction>
                     <DocsFunction clazzName="RBTSolution" functionName="setRoot" args={[
                         { name: "node", type: RBNodeType }
@@ -153,8 +166,8 @@ export default function RedBlackTreeDocs() {
                     <h4 className="font-semibold mt-4 mb-1">How it works</h4>
                     <ul className="list-disc *:ml-5 mb-3">
                         <li>Each visualization method auto-generates a message from its arguments
-                            (e.g. <code>linkLeft(parent, child)</code> produces
-                            {" "}<code>&quot;parent.key.left &larr; child.key&quot;</code>).</li>
+                            (e.g. <code>moveEdgeTransaction(parent, &quot;left&quot;, child)</code> produces
+                            {" "}<code>&quot;Move parent.left edge to child&quot;</code>).</li>
                         <li>An annotation can <b>override</b> the auto-generated message for any line.</li>
                         <li>Annotations on <code>if</code>/<code>else if</code>/<code>else</code> lines
                             define branch Q&amp;A that is displayed automatically when execution enters
@@ -180,7 +193,7 @@ export default function RedBlackTreeDocs() {
                     </p>
                     <ul className="list-disc *:ml-5 mb-3">
                         <li><b>Method arguments</b> — for viz methods, the parameter names are available
-                            (e.g. <code>parent</code>, <code>child</code> for <code>linkLeft</code>).</li>
+                            (e.g. <code>parent</code>, <code>child</code> for <code>moveEdgeTransaction</code>, or <code>oldNode</code>, <code>newNode</code> for <code>transplantTransaction</code>).</li>
                         <li><b>Tracked pointers</b> — all currently tracked pointers by name
                             (e.g. <code>z</code>, <code>x</code>, <code>uncle</code>). These are
                             {" "}<DocsRef refs="RBNode">RBNode</DocsRef> objects, so you can

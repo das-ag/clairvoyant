@@ -317,83 +317,6 @@ export class RBTSolutionBase {
         this._pushStep(`Insert node ${z.key}`, cmd, false, line, { z });
     }
 
-    linkLeft(parent: RBNode, child: RBNode): void {
-        const line = getEvalCallerLine();
-        const cmd = new SetChildCommand(parent, child, "left");
-        cmd.execute(this.tree);
-        this._pushStep(
-            `${this._nodeLabel(parent)}.left ← ${this._nodeLabel(child)}`,
-            cmd, false, line,
-            { parent, child },
-        );
-    }
-
-    linkRight(parent: RBNode, child: RBNode): void {
-        const line = getEvalCallerLine();
-        const cmd = new SetChildCommand(parent, child, "right");
-        cmd.execute(this.tree);
-        this._pushStep(
-            `${this._nodeLabel(parent)}.right ← ${this._nodeLabel(child)}`,
-            cmd, false, line,
-            { parent, child },
-        );
-    }
-
-    linkParent(child: RBNode, parent: RBNode): void {
-        const line = getEvalCallerLine();
-        const cmd = new SetParentCommand(child, parent);
-        cmd.execute(this.tree);
-        this._pushStep(
-            `${this._nodeLabel(child)}.parent ← ${this._nodeLabel(parent)}`,
-            cmd, false, line,
-            { child, parent },
-        );
-    }
-
-    moveEdge(parent: RBNode, side: "left" | "right", child: RBNode): void {
-        const line = getEvalCallerLine();
-        const cmds: Command<RBTree>[] = [
-            new SetChildCommand(parent, child, side),
-        ];
-        if (!child.isNil) {
-            cmds.push(new SetParentCommand(child, parent));
-        }
-        const cmd = new CompoundCommand(
-            `${this._nodeLabel(parent)}.${side} ← ${this._nodeLabel(child)}`,
-            cmds,
-        );
-        cmd.execute(this.tree);
-        this._pushStep(
-            `Move ${this._nodeLabel(parent)}.${side} edge to ${this._nodeLabel(child)}`,
-            cmd, false, line,
-            { parent, child },
-        );
-    }
-
-    replaceInParent(oldNode: RBNode, newNode: RBNode): void {
-        const line = getEvalCallerLine();
-        const cmds: Command<RBTree>[] = [
-            new SetParentCommand(newNode, oldNode.parent),
-        ];
-        if (oldNode.parent === this.tree.NIL) {
-            cmds.push(new SetRootCommand(this.tree, newNode));
-        } else if (oldNode === oldNode.parent.left) {
-            cmds.push(new SetChildCommand(oldNode.parent, newNode, "left"));
-        } else {
-            cmds.push(new SetChildCommand(oldNode.parent, newNode, "right"));
-        }
-        const cmd = new CompoundCommand(
-            `Replace ${this._nodeLabel(oldNode)} with ${this._nodeLabel(newNode)} in parent`,
-            cmds,
-        );
-        cmd.execute(this.tree);
-        this._pushStep(
-            `Replace ${this._nodeLabel(oldNode)} with ${this._nodeLabel(newNode)} in parent`,
-            cmd, false, line,
-            { oldNode, newNode },
-        );
-    }
-
     transplantTransaction(oldNode: RBNode, newNode: RBNode): void {
         const line = getEvalCallerLine();
         const oldParent = oldNode.parent;
@@ -701,7 +624,7 @@ export class RBTSolutionBase {
 // ── Code instrumentation ────────────────────────────────────────────────
 
 const VIZ_METHOD_RE =
-    /\bthis\.(logStep|logCase|done|trackPointer|clearPointer|recolor|setRoot|insertNode|linkLeft|linkRight|linkParent|moveEdge|moveEdgeTransaction|replaceInParent|removeNode|rotateLeftTransaction|rotateRightTransaction|transplantTransaction)\s*\(/;
+    /\bthis\.(logStep|logCase|done|trackPointer|clearPointer|recolor|setRoot|insertNode|moveEdgeTransaction|removeNode|rotateLeftTransaction|rotateRightTransaction|transplantTransaction)\s*\(/;
 
 const INTERNAL_CALL_RE =
     /\bthis\.(leftRotate|rightRotate|transplant|insertFixup|deleteFixup)\s*\(/;
