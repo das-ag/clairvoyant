@@ -59,8 +59,7 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
             timerRef.current = null;
             return;
         }
-        function scheduleNext() {
-            const cur = stepRef.current;
+        function scheduleFrom(cur: number) {
             const max = maxRef.current;
             if (cur >= max) {
                 onPlayingChange(false);
@@ -68,11 +67,12 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
             }
             const delay = caseStepsRef.current?.has(cur) ? intervalMs * 4 : intervalMs;
             timerRef.current = setTimeout(() => {
-                onStepChange(cur + 1);
-                scheduleNext();
+                const nextStep = Math.min(cur + 1, maxRef.current);
+                onStepChange(nextStep);
+                scheduleFrom(nextStep);
             }, delay);
         }
-        scheduleNext();
+        scheduleFrom(stepRef.current);
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };

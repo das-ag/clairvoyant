@@ -12,22 +12,8 @@ class RBTSolution {
         this.logStep({x});
         this.trackPointer("lr.x", x);
         let y = this.trackPointer("lr.y", x.right);
-        // Turn y's left subtree into x's right subtree
-        this.linkRight(x, y.left);
-        if (y.left !== this.tree.NIL)
-            this.linkParent(y.left, x);
-        // Link y to x's parent
-        this.linkParent(y, x.parent);
-        if (x.parent === this.tree.NIL) {
-            this.setRoot(y);
-        } else if (x === x.parent.left) {
-            this.linkLeft(x.parent, y);
-        } else {
-            this.linkRight(x.parent, y);
-        }
-        // Put x on y's left
-        this.linkLeft(y, x);
-        this.linkParent(x, y);
+        // Animate the edge rewires as one connected rotation transaction
+        this.rotateLeftTransaction(x, y);
         this.clearPointer("lr.x");
         this.clearPointer("lr.y");
     }
@@ -38,22 +24,8 @@ class RBTSolution {
         this.logStep({y});
         this.trackPointer("rr.y", y);
         let x = this.trackPointer("rr.x", y.left);
-        // Turn x's right subtree into y's left subtree
-        this.linkLeft(y, x.right);
-        if (x.right !== this.tree.NIL)
-            this.linkParent(x.right, y);
-        // Link x to y's parent
-        this.linkParent(x, y.parent);
-        if (y.parent === this.tree.NIL) {
-            this.setRoot(x);
-        } else if (y === y.parent.left) {
-            this.linkLeft(y.parent, x);
-        } else {
-            this.linkRight(y.parent, x);
-        }
-        // Put y on x's right
-        this.linkRight(x, y);
-        this.linkParent(y, x);
+        // Animate the edge rewires as one connected rotation transaction
+        this.rotateRightTransaction(y, x);
         this.clearPointer("rr.x");
         this.clearPointer("rr.y");
     }
@@ -63,14 +35,7 @@ class RBTSolution {
     transplant(u, v) {
         this.trackPointer("u", u);
         this.trackPointer("v", v);
-        if (u.parent === this.tree.NIL) {
-            this.setRoot(v);
-        } else if (u === u.parent.left) {
-            this.linkLeft(u.parent, v);
-        } else {
-            this.linkRight(u.parent, v);
-        }
-        this.linkParent(v, u.parent);
+        this.replaceInParent(u, v);
         this.clearPointer("u");
         this.clearPointer("v");
     }

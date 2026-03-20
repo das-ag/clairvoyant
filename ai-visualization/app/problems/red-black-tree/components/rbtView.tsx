@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { RBColor, RBNode, RBTree } from "@/lib/rbt/rbtree";
-import { computeLayout, NodePosition } from "@/lib/rbt/rbtLayout";
-import { RBTStep } from "@/lib/rbt/rbtSolution";
+import { computeLayout, LEVEL_HEIGHT, MIN_NODE_GAP, NodePosition } from "@/lib/rbt/rbtLayout";
+import {
+    RBTStep,
+    RenderAnchor,
+    RenderEdge,
+    RotationRenderPlan,
+} from "@/lib/rbt/rbtSolution";
 import "./rbtView.css";
 
 const NODE_RADIUS = 20;
@@ -18,33 +23,10 @@ const ZOOM_SENSITIVITY = 0.001;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 5;
 const ANIM_DURATION = 600;
-const ORPHAN_OFFSET_X = -60;
-const ORPHAN_OFFSET_Y = 70;
-const OVERLAP_THRESHOLD = NODE_RADIUS * 2.5;
-
-function orphanPosition(
-    prev: NodePosition,
-    reachableLayout: Map<RBNode, NodePosition>,
-): NodePosition {
-    for (const [, rPos] of reachableLayout) {
-        if (Math.abs(rPos.x - prev.x) < OVERLAP_THRESHOLD &&
-            Math.abs(rPos.y - prev.y) < OVERLAP_THRESHOLD) {
-            return { x: prev.x + ORPHAN_OFFSET_X, y: prev.y + ORPHAN_OFFSET_Y };
-        }
-    }
-    return { ...prev };
-}
 
 function easeOut(t: number): number {
     if (t >= 1) return 1;
     return 1 - Math.pow(1 - t, 3);
-}
-
-interface AnimState {
-    startPositions: Map<number, NodePosition>;
-    endPositions: Map<number, NodePosition>;
-    oldEdgeParents: Map<number, number>;
-    startTime: number;
 }
 
 interface ViewBox {
@@ -53,6 +35,35 @@ interface ViewBox {
     w: number;
     h: number;
 }
+
+interface VisualFrame {
+    positions: Map<number, NodePosition>;
+    edges: RenderEdge[];
+}
+
+interface RenderedEdge {
+    key: string;
+    start: NodePosition;
+    end: NodePosition;
+}
+
+interface SimpleAnimState {
+    kind: "simple";
+    startFrame: VisualFrame;
+    endFrame: VisualFrame;
+    startTime: number;
+    durationMs: number;
+}
+
+interface RotationAnimState {
+    kind: "rotation";
+    plan: RotationRenderPlan;
+    finalFrame: VisualFrame;
+    startTime: number;
+    totalDurationMs: number;
+}
+
+type AnimState = SimpleAnimState | RotationAnimState;
 
 function pointerStrokeColor(labels: Set<string>): string | null {
     for (const name of labels) {
@@ -70,6 +81,7 @@ interface RBTViewProps {
     tree: RBTree | null;
     renderKey: number;
     currentStep?: RBTStep;
+    currentStepIndex?: number;
     onFitRef?: React.MutableRefObject<(() => void) | null>;
 }
 
@@ -104,7 +116,233 @@ function computeBoundsViewBox(layout: Map<RBNode, NodePosition>, pad = 50): View
     return { x, y, w, h };
 }
 
-export default function RBTView({ tree, renderKey, currentStep, onFitRef }: RBTViewProps) {
+function clonePositions(positions: Map<number, NodePosition>): Map<number, NodePosition> {
+    return new Map([...positions.entries()].map(([uid, pos]) => [uid, { x: pos.x, y: pos.y }]));
+}
+
+function layoutRecordToMap(record: Record<number, NodePosition>): Map<number, NodePosition> {
+    return new Map(
+        Object.entries(record).map(([uid, pos]) => [Number(uid), { x: pos.x, y: pos.y }]),
+    );
+}
+
+function buildFrame(tree: RBTree | null): VisualFrame {
+    if (!tree || tree.root === tree.NIL) {
+        return { positions: new Map(), edges: [] };
+    }
+
+    const positions = new Map<number, NodePosition>();
+    for (const [node, pos] of computeLayout(tree)) {
+        positions.set(node.uid, { x: pos.x, y: pos.y });
+    }
+
+    const edges: RenderEdge[] = [];
+    for (const node of tree.allNodes()) {
+        if (node.left !== tree.NIL) edges.push({ parentUid: node.uid, childUid: node.left.uid, side: "left" });
+        if (node.right !== tree.NIL) edges.push({ parentUid: node.uid, childUid: node.right.uid, side: "right" });
+    }
+
+    return { positions, edges };
+}
+
+function framesEqual(a: VisualFrame, b: VisualFrame): boolean {
+    if (a.positions.size !== b.positions.size || a.edges.length !== b.edges.length) return false;
+    for (const [uid, pos] of a.positions) {
+        const other = b.positions.get(uid);
+        if (!other || other.x !== pos.x || other.y !== pos.y) return false;
+    }
+    for (let i = 0; i < a.edges.length; i++) {
+        const left = a.edges[i];
+        const right = b.edges[i];
+        if (
+            left.parentUid !== right.parentUid ||
+            left.childUid !== right.childUid ||
+            left.side !== right.side
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function interpolatePosition(a: NodePosition, b: NodePosition, t: number): NodePosition {
+    return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+    };
+}
+
+function slotAnchor(parent: NodePosition, side: "left" | "right"): NodePosition {
+    return {
+        x: parent.x + (side === "left" ? -MIN_NODE_GAP / 2 : MIN_NODE_GAP / 2),
+        y: parent.y + LEVEL_HEIGHT,
+    };
+}
+
+function renderEdgesFromFrame(frame: VisualFrame): RenderedEdge[] {
+    return frame.edges.flatMap((edge) => {
+        const parent = frame.positions.get(edge.parentUid);
+        const child = frame.positions.get(edge.childUid);
+        if (!parent || !child) return [];
+        return [{
+            key: `${edge.parentUid}-${edge.side}-${edge.childUid}`,
+            start: parent,
+            end: child,
+        }];
+    });
+}
+
+function applyCompletedMotion(edges: RenderEdge[], motion: RotationRenderPlan["edgeMotions"][number]): RenderEdge[] {
+    const next = edges.filter((edge) => {
+        if (motion.fromChild.kind !== "node") return true;
+        return !(
+            edge.parentUid === motion.fromParentUid &&
+            edge.childUid === motion.fromChild.uid &&
+            edge.side === motion.side
+        );
+    });
+
+    if (motion.toChild.kind === "node") {
+        next.push({
+            parentUid: motion.toParentUid,
+            childUid: motion.toChild.uid,
+            side: motion.side,
+        });
+    }
+
+    return next;
+}
+
+function resolveAnchor(
+    anchor: RenderAnchor,
+    positions: Map<number, NodePosition>,
+): NodePosition | null {
+    if (anchor.kind === "node") {
+        return positions.get(anchor.uid) ?? null;
+    }
+    const parent = positions.get(anchor.parentUid);
+    return parent ? slotAnchor(parent, anchor.side) : null;
+}
+
+function sampleRotationDisplay(plan: RotationRenderPlan, elapsedMs: number): { positions: Map<number, NodePosition>; edges: RenderedEdge[] } {
+    const startPositions = layoutRecordToMap(plan.startLayout);
+    const endPositions = layoutRecordToMap(plan.endLayout);
+    const edgePhaseCount = plan.edgeMotions.length;
+    const edgeDuration = plan.edgePhaseDurationMs;
+    const layoutStart = edgePhaseCount * edgeDuration;
+
+    if (elapsedMs >= layoutStart + plan.layoutPhaseDurationMs) {
+        return {
+            positions: endPositions,
+            edges: renderEdgesFromFrame({ positions: endPositions, edges: plan.endEdges }),
+        };
+    }
+
+    if (elapsedMs >= layoutStart) {
+        const t = easeOut(Math.min((elapsedMs - layoutStart) / plan.layoutPhaseDurationMs, 1));
+        const positions = new Map<number, NodePosition>();
+        const uids = new Set([...startPositions.keys(), ...endPositions.keys()]);
+        for (const uid of uids) {
+            const start = startPositions.get(uid);
+            const end = endPositions.get(uid);
+            if (!start && !end) continue;
+            if (!start) {
+                positions.set(uid, { ...end! });
+            } else if (!end) {
+                positions.set(uid, { ...start });
+            } else {
+                positions.set(uid, interpolatePosition(start, end, t));
+            }
+        }
+        return {
+            positions,
+            edges: renderEdgesFromFrame({ positions, edges: plan.endEdges }),
+        };
+    }
+
+    const phaseIndex = Math.min(Math.floor(elapsedMs / edgeDuration), Math.max(edgePhaseCount - 1, 0));
+    const phaseStart = phaseIndex * edgeDuration;
+    const phaseT = easeOut(Math.min((elapsedMs - phaseStart) / edgeDuration, 1));
+    let edges = [...plan.startEdges];
+    for (let i = 0; i < phaseIndex; i++) {
+        edges = applyCompletedMotion(edges, plan.edgeMotions[i]);
+    }
+
+    const positions = startPositions;
+    const renderedEdges = edges.flatMap((edge) => {
+        const motion = plan.edgeMotions[phaseIndex];
+        const isMovingFromNode =
+            motion &&
+            motion.fromChild.kind === "node" &&
+            edge.parentUid === motion.fromParentUid &&
+            edge.childUid === motion.fromChild.uid &&
+            edge.side === motion.side;
+        if (isMovingFromNode) return [];
+
+        const parent = positions.get(edge.parentUid);
+        const child = positions.get(edge.childUid);
+        if (!parent || !child) return [];
+        return [{
+            key: `${edge.parentUid}-${edge.side}-${edge.childUid}`,
+            start: parent,
+            end: child,
+        }];
+    });
+
+    const motion = plan.edgeMotions[phaseIndex];
+    if (motion) {
+        const startParent = positions.get(motion.fromParentUid);
+        const endParent = positions.get(motion.toParentUid);
+        const startChild = resolveAnchor(motion.fromChild, positions);
+        const endChild = resolveAnchor(motion.toChild, positions);
+
+        if (startParent && endParent && startChild && endChild) {
+            renderedEdges.push({
+                key: `motion-${phaseIndex}`,
+                start: interpolatePosition(startParent, endParent, phaseT),
+                end: interpolatePosition(startChild, endChild, phaseT),
+            });
+        }
+    }
+
+    return { positions, edges: renderedEdges };
+}
+
+function sampleAnimDisplay(anim: AnimState | null, fallback: VisualFrame, now: number): { positions: Map<number, NodePosition>; edges: RenderedEdge[] } {
+    if (!anim) {
+        return {
+            positions: fallback.positions,
+            edges: renderEdgesFromFrame(fallback),
+        };
+    }
+
+    if (anim.kind === "rotation") {
+        return sampleRotationDisplay(anim.plan, now - anim.startTime);
+    }
+
+    const t = easeOut(Math.min((now - anim.startTime) / anim.durationMs, 1));
+    const positions = new Map<number, NodePosition>();
+    const uids = new Set([...anim.startFrame.positions.keys(), ...anim.endFrame.positions.keys()]);
+    for (const uid of uids) {
+        const start = anim.startFrame.positions.get(uid);
+        const end = anim.endFrame.positions.get(uid);
+        if (!start && !end) continue;
+        if (!start) {
+            positions.set(uid, { ...end! });
+        } else if (!end) {
+            positions.set(uid, { ...start });
+        } else {
+            positions.set(uid, interpolatePosition(start, end, t));
+        }
+    }
+
+    return {
+        positions,
+        edges: renderEdgesFromFrame({ positions, edges: anim.endFrame.edges }),
+    };
+}
+
+export default function RBTView({ tree, renderKey, currentStep, currentStepIndex, onFitRef }: RBTViewProps) {
     // Zoom/pan state
     const [viewBox, setViewBox] = useState<ViewBox>({ x: -200, y: -50, w: 400, h: 300 });
     const [isDragging, setIsDragging] = useState(false);
@@ -113,46 +351,27 @@ export default function RBTView({ tree, renderKey, currentStep, onFitRef }: RBTV
     const userTransformedRef = useRef(false);
 
     // ── Animation state ─────────────────────────────────────────────
-    const prevLayoutByUid = useRef(new Map<number, NodePosition>());
-    const prevEdgeParents = useRef(new Map<number, number>());
     const animRef = useRef<AnimState | null>(null);
+    const settledFrameRef = useRef<VisualFrame>({ positions: new Map(), edges: [] });
+    const lastRotationStepIndexRef = useRef<number | null>(null);
     const rafRef = useRef(0);
     const [, forceRender] = useReducer((x: number) => x + 1, 0);
 
+    const finalFrame = useMemo(() => {
+        void renderKey;
+        return buildFrame(tree);
+    }, [tree, renderKey]);
+
     const finalLayout = useMemo(() => {
-        if (!tree || tree.root === tree.NIL) return new Map<RBNode, NodePosition>();
-        return computeLayout(tree);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tree, renderKey]);
-
-    const finalLayoutByUid = useMemo(() => {
-        const map = new Map<number, NodePosition>();
-        for (const [node, pos] of finalLayout) {
-            map.set(node.uid, pos);
-        }
-        if (tree) {
-            for (const node of tree.allTrackedNodes()) {
-                if (!map.has(node.uid)) {
-                    const prev = prevLayoutByUid.current.get(node.uid);
-                    if (prev) map.set(node.uid, orphanPosition(prev, finalLayout));
-                }
-            }
+        const map = new Map<RBNode, NodePosition>();
+        if (!tree) return map;
+        const reachableByUid = new Map(tree.allNodes().map((node) => [node.uid, node]));
+        for (const [uid, pos] of finalFrame.positions) {
+            const node = reachableByUid.get(uid);
+            if (node) map.set(node, pos);
         }
         return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [finalLayout, renderKey]);
-
-    const currentEdgeParents = useMemo(() => {
-        const map = new Map<number, number>();
-        if (!tree || tree.root === tree.NIL) return map;
-        const allNodes = tree.allNodes();
-        for (const n of allNodes) {
-            if (n.left !== tree.NIL) map.set(n.left.uid, n.uid);
-            if (n.right !== tree.NIL) map.set(n.right.uid, n.uid);
-        }
-        return map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tree, renderKey]);
+    }, [tree, finalFrame]);
 
     const fitToContent = useCallback(() => {
         const vb = computeBoundsViewBox(finalLayout);
@@ -174,77 +393,77 @@ export default function RBTView({ tree, renderKey, currentStep, onFitRef }: RBTV
 
     // ── Animation loop ──────────────────────────────────────────────
     useEffect(() => {
-        const oldPositions = prevLayoutByUid.current;
-        const oldEdgeParentMap = prevEdgeParents.current;
+        const now = performance.now();
+        const currentDisplay = sampleAnimDisplay(
+            animRef.current,
+            settledFrameRef.current.positions.size > 0 ? settledFrameRef.current : finalFrame,
+            now,
+        );
+        const startFrame: VisualFrame = {
+            positions: clonePositions(currentDisplay.positions),
+            edges: currentStep?.renderPlan?.kind === "rotation"
+                ? finalFrame.edges
+                : [...(animRef.current?.kind === "simple" ? animRef.current.endFrame.edges : settledFrameRef.current.edges)],
+        };
 
-        const newPositions = new Map<number, NodePosition>();
-        for (const [node, pos] of finalLayout) {
-            newPositions.set(node.uid, { x: pos.x, y: pos.y });
-        }
-        if (tree) {
-            for (const node of tree.allTrackedNodes()) {
-                if (!newPositions.has(node.uid)) {
-                    const prev = prevLayoutByUid.current.get(node.uid);
-                    if (prev) newPositions.set(node.uid, orphanPosition(prev, finalLayout));
-                }
+        cancelAnimationFrame(rafRef.current);
+
+        if (currentStep?.renderPlan?.kind === "rotation") {
+            if (
+                currentStepIndex != null &&
+                lastRotationStepIndexRef.current === currentStepIndex &&
+                (
+                    animRef.current?.kind === "rotation" ||
+                    framesEqual(settledFrameRef.current, finalFrame)
+                )
+            ) {
+                return;
             }
-        }
-
-        let startPositions: Map<number, NodePosition>;
-        if (animRef.current) {
-            const a = animRef.current;
-            const elapsed = performance.now() - a.startTime;
-            const t = easeOut(Math.min(elapsed / ANIM_DURATION, 1));
-            startPositions = new Map<number, NodePosition>();
-            const allUids = new Set([...a.startPositions.keys(), ...a.endPositions.keys()]);
-            for (const uid of allUids) {
-                const s = a.startPositions.get(uid);
-                const e = a.endPositions.get(uid);
-                if (s && e) {
-                    startPositions.set(uid, {
-                        x: s.x + (e.x - s.x) * t,
-                        y: s.y + (e.y - s.y) * t,
-                    });
-                } else if (e) {
-                    startPositions.set(uid, { ...e });
-                } else if (s) {
-                    startPositions.set(uid, { ...s });
-                }
-            }
-            cancelAnimationFrame(rafRef.current);
-        } else {
-            startPositions = new Map(oldPositions);
-        }
-
-        if (startPositions.size > 0 && newPositions.size > 0) {
+            const totalDurationMs =
+                currentStep.renderPlan.edgeMotions.length * currentStep.renderPlan.edgePhaseDurationMs +
+                currentStep.renderPlan.layoutPhaseDurationMs;
             animRef.current = {
-                startPositions,
-                endPositions: newPositions,
-                oldEdgeParents: new Map(oldEdgeParentMap),
-                startTime: performance.now(),
+                kind: "rotation",
+                plan: currentStep.renderPlan,
+                finalFrame,
+                startTime: now,
+                totalDurationMs,
             };
-
-            const tick = () => {
-                const a = animRef.current;
-                if (!a) return;
-                const elapsed = performance.now() - a.startTime;
-                if (elapsed >= ANIM_DURATION) {
-                    animRef.current = null;
-                    forceRender();
-                    return;
-                }
-                forceRender();
-                rafRef.current = requestAnimationFrame(tick);
+            lastRotationStepIndexRef.current = currentStepIndex ?? null;
+        } else if (!framesEqual(startFrame, finalFrame)) {
+            animRef.current = {
+                kind: "simple",
+                startFrame,
+                endFrame: finalFrame,
+                startTime: now,
+                durationMs: ANIM_DURATION,
             };
-
-            rafRef.current = requestAnimationFrame(tick);
+        } else {
+            animRef.current = null;
+            settledFrameRef.current = finalFrame;
+            return;
         }
 
-        prevLayoutByUid.current = newPositions;
-        prevEdgeParents.current = new Map(currentEdgeParents);
+        const tick = () => {
+            const anim = animRef.current;
+            if (!anim) return;
+            const elapsed = performance.now() - anim.startTime;
+            const done = anim.kind === "rotation"
+                ? elapsed >= anim.totalDurationMs
+                : elapsed >= anim.durationMs;
+            if (done) {
+                animRef.current = null;
+                settledFrameRef.current = finalFrame;
+                forceRender();
+                return;
+            }
+            forceRender();
+            rafRef.current = requestAnimationFrame(tick);
+        };
 
+        rafRef.current = requestAnimationFrame(tick);
         return () => { cancelAnimationFrame(rafRef.current); };
-    }, [finalLayout, currentEdgeParents]);
+    }, [currentStep, currentStepIndex, finalFrame]);
 
     // ── Zoom (wheel) ────────────────────────────────────────────────
 
@@ -317,53 +536,12 @@ export default function RBTView({ tree, renderKey, currentStep, onFitRef }: RBTV
         );
     }
 
-    const trackedNodes = tree.allTrackedNodes();
     const reachableNodes = tree.allNodes();
-
-    // ── Interpolation helpers ────────────────────────────────────
-    const anim = animRef.current;
-    let animT = 1;
-    if (anim) {
-        const elapsed = performance.now() - anim.startTime;
-        animT = easeOut(Math.min(elapsed / ANIM_DURATION, 1));
-    }
-
-    function getNodeAnimPos(uid: number): NodePosition | null {
-        if (!anim || animT >= 1) return finalLayoutByUid.get(uid) ?? null;
-        const start = anim.startPositions.get(uid);
-        const end = anim.endPositions.get(uid);
-        if (!start && !end) return null;
-        if (!start) return end!;
-        if (!end) return start;
-        return {
-            x: start.x + (end.x - start.x) * animT,
-            y: start.y + (end.y - start.y) * animT,
-        };
-    }
-
-    function getEdgeTopAnchor(childUid: number, newParentUid: number): NodePosition | null {
-        if (!anim || animT >= 1) return finalLayoutByUid.get(newParentUid) ?? null;
-        const oldParentUid = anim.oldEdgeParents.get(childUid);
-        if (oldParentUid === undefined || oldParentUid === newParentUid) {
-            return getNodeAnimPos(newParentUid);
-        }
-        const startPos = anim.startPositions.get(oldParentUid);
-        const endPos = anim.endPositions.get(newParentUid);
-        if (!startPos) return endPos ?? null;
-        if (!endPos) return startPos;
-        return {
-            x: startPos.x + (endPos.x - startPos.x) * animT,
-            y: startPos.y + (endPos.y - startPos.y) * animT,
-        };
-    }
-
-    // ── Edge computation ─────────────────────────────────────────
-
-    const edges: { parent: RBNode; child: RBNode; side: "left" | "right" }[] = [];
-    for (const node of reachableNodes) {
-        if (node.left !== tree.NIL) edges.push({ parent: node, child: node.left, side: "left" });
-        if (node.right !== tree.NIL) edges.push({ parent: node, child: node.right, side: "right" });
-    }
+    const display = sampleAnimDisplay(
+        animRef.current,
+        animRef.current?.kind === "simple" ? animRef.current.endFrame : finalFrame,
+        performance.now(),
+    );
 
     const containerClass = `rbt-svg-container${isDragging ? " dragging" : ""}`;
 
@@ -381,27 +559,21 @@ export default function RBTView({ tree, renderKey, currentStep, onFitRef }: RBTV
                 onMouseLeave={handleMouseLeave}
             >
                 {/* Edges */}
-                {edges.map((e) => {
-                    const pPos = getEdgeTopAnchor(e.child.uid, e.parent.uid);
-                    const cPos = getNodeAnimPos(e.child.uid);
-                    if (!pPos || !cPos) return null;
-
-                    return (
-                        <line
-                            key={e.child.uid}
-                            className="rbt-edge"
-                            x1={pPos.x}
-                            y1={pPos.y + NODE_RADIUS}
-                            x2={cPos.x}
-                            y2={cPos.y - NODE_RADIUS}
-                            stroke="#64748b"
-                        />
-                    );
-                })}
+                {display.edges.map((edge) => (
+                    <line
+                        key={edge.key}
+                        className="rbt-edge"
+                        x1={edge.start.x}
+                        y1={edge.start.y + NODE_RADIUS}
+                        x2={edge.end.x}
+                        y2={edge.end.y - NODE_RADIUS}
+                        stroke="#64748b"
+                    />
+                ))}
 
                 {/* Nodes */}
-                {trackedNodes.map((node) => {
-                    const pos = getNodeAnimPos(node.uid);
+                {reachableNodes.map((node) => {
+                    const pos = display.positions.get(node.uid);
                     if (!pos) return null;
                     const fill = nodeFill(node);
                     const ptrColor = pointerStrokeColor(node.pointerLabels);

@@ -8,41 +8,80 @@ export interface NodePosition {
 const LEVEL_HEIGHT = 70;
 const MIN_NODE_GAP = 50;
 
-/**
- * Computes (x, y) positions for every real node in the tree using a
- * simple in-order-index layout:
- *   y = depth * LEVEL_HEIGHT
- *   x = inOrderIndex * MIN_NODE_GAP
- *
- * Returns a Map from RBNode to {x, y}, centered around x = 0.
- */
+interface LayoutShape {
+    positions: Map<RBNode, NodePosition>;
+    width: number;
+}
+
+export interface LayoutMetrics {
+    minNodeDistance: number;
+    hasOverlaps: boolean;
+}
+
 export function computeLayout(tree: RBTree): Map<RBNode, NodePosition> {
-    const positions = new Map<RBNode, NodePosition>();
-    if (tree.root === tree.NIL) return positions;
+    if (tree.root === tree.NIL) return new Map();
 
-    let inOrderIndex = 0;
+    const layoutSubtree = (node: RBNode, depth: number): LayoutShape => {
+        if (node === tree.NIL) {
+            return { positions: new Map(), width: 0 };
+        }
 
-    const walk = (node: RBNode, depth: number) => {
-        if (node === tree.NIL) return;
-        walk(node.left, depth + 1);
-        positions.set(node, {
-            x: inOrderIndex * MIN_NODE_GAP,
-            y: depth * LEVEL_HEIGHT,
-        });
-        inOrderIndex++;
-        walk(node.right, depth + 1);
+        const left = layoutSubtree(node.left, depth + 1);
+        const right = layoutSubtree(node.right, depth + 1);
+        const positions = new Map<RBNode, NodePosition>();
+
+        let leftOffset = 0;
+        let rightOffset = 0;
+        let width = MIN_NODE_GAP;
+
+        if (left.width > 0 && right.width > 0) {
+            leftOffset = -(MIN_NODE_GAP / 2 + right.width / 2);
+            rightOffset = MIN_NODE_GAP / 2 + left.width / 2;
+            width = left.width + MIN_NODE_GAP + right.width;
+        } else if (left.width > 0) {
+            leftOffset = -MIN_NODE_GAP / 2;
+            width = Math.max(MIN_NODE_GAP, left.width + MIN_NODE_GAP);
+        } else if (right.width > 0) {
+            rightOffset = MIN_NODE_GAP / 2;
+            width = Math.max(MIN_NODE_GAP, right.width + MIN_NODE_GAP);
+        }
+
+        positions.set(node, { x: 0, y: depth * LEVEL_HEIGHT });
+        for (const [child, pos] of left.positions) {
+            positions.set(child, { x: pos.x + leftOffset, y: pos.y });
+        }
+        for (const [child, pos] of right.positions) {
+            positions.set(child, { x: pos.x + rightOffset, y: pos.y });
+        }
+
+        return { positions, width };
     };
 
-    walk(tree.root, 0);
+    return layoutSubtree(tree.root, 0).positions;
+}
 
-    // Center around x = 0
-    const allX = [...positions.values()].map((p) => p.x);
-    const midX = (Math.min(...allX) + Math.max(...allX)) / 2;
-    for (const pos of positions.values()) {
-        pos.x -= midX;
+export function computeLayoutMetrics(
+    layout: Map<RBNode, NodePosition> | Map<number, NodePosition>,
+): LayoutMetrics {
+    const positions = [...layout.values()];
+    let minNodeDistance = Number.POSITIVE_INFINITY;
+
+    for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+            const dx = positions[i].x - positions[j].x;
+            const dy = positions[i].y - positions[j].y;
+            minNodeDistance = Math.min(minNodeDistance, Math.hypot(dx, dy));
+        }
     }
 
-    return positions;
+    if (!isFinite(minNodeDistance)) {
+        minNodeDistance = Number.POSITIVE_INFINITY;
+    }
+
+    return {
+        minNodeDistance,
+        hasOverlaps: minNodeDistance < MIN_NODE_GAP * 0.9,
+    };
 }
 
 export { LEVEL_HEIGHT, MIN_NODE_GAP };

@@ -228,7 +228,8 @@ export default function RedBlackTreePage() {
     const onStepChange = useCallback((newStep: number) => {
         if (!tree) return;
         const curSteps = stepsRef.current;
-        let idx = stepIndexRef.current;
+        const startIdx = stepIndexRef.current;
+        let idx = startIdx;
         if (curSteps.length === 0) return;
         const maxIter = curSteps.length + 1;
         let iter = 0;
@@ -243,8 +244,10 @@ export default function RedBlackTreePage() {
             if (step.command) step.command.revert(tree);
         }
         stepIndexRef.current = idx;
-        setStepIndex(idx);
-        setRenderKey((k) => k + 1);
+        if (idx !== startIdx) {
+            setStepIndex(idx);
+            setRenderKey((k) => k + 1);
+        }
     }, [tree]);
 
     // ── Insert / Delete operations ──────────────────────────────────
@@ -335,7 +338,13 @@ export default function RedBlackTreePage() {
                 {/* Right panel: viewport */}
                 <div className="relative flex-grow m-2 overflow-hidden min-w-0">
                     {/* Tree visualization fills entire panel */}
-                    <RBTView tree={tree} renderKey={renderKey} currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined} onFitRef={fitRef} />
+                    <RBTView
+                        tree={tree}
+                        renderKey={renderKey}
+                        currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined}
+                        currentStepIndex={stepIndex}
+                        onFitRef={fitRef}
+                    />
 
                     {/* Top-left: Play/Pause + Fit */}
                     <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">

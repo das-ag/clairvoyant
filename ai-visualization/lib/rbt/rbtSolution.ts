@@ -9,6 +9,7 @@ import {
     SetChildCommand,
     SetParentCommand,
     UntrackNodeCommand,
+    CompoundCommand,
 } from "./rbtCommands";
 import { RBColor, RBNode, RBTree } from "./rbtree";
 import {
@@ -16,6 +17,7 @@ import {
     BranchScopeMap,
     evaluateTemplate,
 } from "./rbtAnnotations";
+import { computeLayout, computeLayoutMetrics, NodePosition } from "./rbtLayout";
 
 // ── Step ────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,7 @@ export class RBTStep {
     answer?: string;
     /** Fixup case label (e.g. "Insert Case 1") when entering a new case. */
     caseLabel?: string;
+    renderPlan?: StepRenderPlan;
 
     constructor(
         debugValue: any = null,
@@ -49,6 +52,37 @@ export class RBTStep {
         this.answer = answer;
     }
 }
+
+export interface RenderEdge {
+    parentUid: number;
+    childUid: number;
+    side: "left" | "right";
+}
+
+export type RenderAnchor =
+    | { kind: "node"; uid: number }
+    | { kind: "slot"; parentUid: number; side: "left" | "right" };
+
+export interface RenderEdgeMotion {
+    fromParentUid: number;
+    toParentUid: number;
+    fromChild: RenderAnchor;
+    toChild: RenderAnchor;
+    side: "left" | "right";
+}
+
+export interface RotationRenderPlan {
+    kind: "rotation";
+    startLayout: Record<number, NodePosition>;
+    endLayout: Record<number, NodePosition>;
+    startEdges: RenderEdge[];
+    endEdges: RenderEdge[];
+    edgeMotions: RenderEdgeMotion[];
+    edgePhaseDurationMs: number;
+    layoutPhaseDurationMs: number;
+}
+
+export type StepRenderPlan = RotationRenderPlan;
 
 // ── Solution Base ───────────────────────────────────────────────────────
 
@@ -143,10 +177,66 @@ export class RBTSolutionBase {
         terminal: boolean,
         line: number | null,
         extras?: Record<string, any>,
-    ) {
+    ): RBTStep {
         this._emitBranchIfNeeded(line);
         const msg = this._resolveMsg(line, autoMsg, extras);
-        this.__steps.push(new RBTStep(msg, cmd, terminal, line, this._pointerSnapshot()));
+        const step = new RBTStep(msg, cmd, terminal, line, this._pointerSnapshot());
+        this.__steps.push(step);
+        return step;
+    }
+
+    private _captureLayoutRecord(): Record<number, NodePosition> {
+        const layout = computeLayout(this.tree);
+        const record: Record<number, NodePosition> = {};
+        for (const [node, pos] of layout) {
+            record[node.uid] = { x: pos.x, y: pos.y };
+        }
+        return record;
+    }
+
+    private _captureEdges(): RenderEdge[] {
+        const edges: RenderEdge[] = [];
+        for (const node of this.tree.allNodes()) {
+            if (node.left !== this.tree.NIL) {
+                edges.push({ parentUid: node.uid, childUid: node.left.uid, side: "left" });
+            }
+            if (node.right !== this.tree.NIL) {
+                edges.push({ parentUid: node.uid, childUid: node.right.uid, side: "right" });
+            }
+        }
+        return edges;
+    }
+
+    private _nodeAnchor(node: RBNode): RenderAnchor {
+        return { kind: "node", uid: node.uid };
+    }
+
+    private _slotAnchor(parent: RBNode, side: "left" | "right"): RenderAnchor {
+        return { kind: "slot", parentUid: parent.uid, side };
+    }
+
+    private _buildRotationPlan(
+        startLayout: Record<number, NodePosition>,
+        startEdges: RenderEdge[],
+        endLayout: Record<number, NodePosition>,
+        endEdges: RenderEdge[],
+        edgeMotions: RenderEdgeMotion[],
+    ): StepRenderPlan | undefined {
+        const metrics = computeLayoutMetrics(new Map(
+            Object.entries(startLayout).map(([uid, pos]) => [Number(uid), pos]),
+        ));
+        if (metrics.hasOverlaps) return undefined;
+
+        return {
+            kind: "rotation",
+            startLayout,
+            endLayout,
+            startEdges,
+            endEdges,
+            edgeMotions,
+            edgePhaseDurationMs: 220,
+            layoutPhaseDurationMs: 320,
+        };
     }
 
     // ── Visualization methods ───────────────────────────────────────
@@ -237,6 +327,172 @@ export class RBTSolutionBase {
         );
     }
 
+    moveEdge(parent: RBNode, side: "left" | "right", child: RBNode): void {
+        const line = getEvalCallerLine();
+        const cmds: Command<RBTree>[] = [
+            new SetChildCommand(parent, child, side),
+        ];
+        if (!child.isNil) {
+            cmds.push(new SetParentCommand(child, parent));
+        }
+        const cmd = new CompoundCommand(
+            `${this._nodeLabel(parent)}.${side} ← ${this._nodeLabel(child)}`,
+            cmds,
+        );
+        cmd.execute(this.tree);
+        this._pushStep(
+            `Move ${this._nodeLabel(parent)}.${side} edge to ${this._nodeLabel(child)}`,
+            cmd, false, line,
+            { parent, child },
+        );
+    }
+
+    replaceInParent(oldNode: RBNode, newNode: RBNode): void {
+        const line = getEvalCallerLine();
+        const cmds: Command<RBTree>[] = [
+            new SetParentCommand(newNode, oldNode.parent),
+        ];
+        if (oldNode.parent === this.tree.NIL) {
+            cmds.push(new SetRootCommand(this.tree, newNode));
+        } else if (oldNode === oldNode.parent.left) {
+            cmds.push(new SetChildCommand(oldNode.parent, newNode, "left"));
+        } else {
+            cmds.push(new SetChildCommand(oldNode.parent, newNode, "right"));
+        }
+        const cmd = new CompoundCommand(
+            `Replace ${this._nodeLabel(oldNode)} with ${this._nodeLabel(newNode)} in parent`,
+            cmds,
+        );
+        cmd.execute(this.tree);
+        this._pushStep(
+            `Replace ${this._nodeLabel(oldNode)} with ${this._nodeLabel(newNode)} in parent`,
+            cmd, false, line,
+            { oldNode, newNode },
+        );
+    }
+
+    rotateLeftTransaction(x: RBNode, y: RBNode): void {
+        const line = getEvalCallerLine();
+        const beta = y.left;
+        const oldParent = x.parent;
+        const side = oldParent !== this.tree.NIL && x === oldParent.left ? "left" : "right";
+
+        const startLayout = this._captureLayoutRecord();
+        const startEdges = this._captureEdges();
+
+        const cmds: Command<RBTree>[] = [new SetChildCommand(x, beta, "right")];
+        if (!beta.isNil) {
+            cmds.push(new SetParentCommand(beta, x));
+        }
+        cmds.push(new SetParentCommand(y, oldParent));
+        if (oldParent === this.tree.NIL) {
+            cmds.push(new SetRootCommand(this.tree, y));
+        } else {
+            cmds.push(new SetChildCommand(oldParent, y, side));
+        }
+        cmds.push(new SetChildCommand(y, x, "left"));
+        cmds.push(new SetParentCommand(x, y));
+
+        const cmd = new CompoundCommand(`Rotate left at ${this._nodeLabel(x)}`, cmds);
+        cmd.execute(this.tree);
+
+        const endLayout = this._captureLayoutRecord();
+        const endEdges = this._captureEdges();
+        const edgeMotions: RenderEdgeMotion[] = [
+            {
+                fromParentUid: x.uid,
+                toParentUid: x.uid,
+                fromChild: this._nodeAnchor(y),
+                toChild: beta.isNil ? this._slotAnchor(x, "right") : this._nodeAnchor(beta),
+                side: "right",
+            },
+            ...(oldParent === this.tree.NIL ? [] : [{
+                fromParentUid: oldParent.uid,
+                toParentUid: oldParent.uid,
+                fromChild: this._nodeAnchor(x),
+                toChild: this._nodeAnchor(y),
+                side,
+            } satisfies RenderEdgeMotion]),
+            {
+                fromParentUid: y.uid,
+                toParentUid: y.uid,
+                fromChild: beta.isNil ? this._slotAnchor(y, "left") : this._nodeAnchor(beta),
+                toChild: this._nodeAnchor(x),
+                side: "left",
+            },
+        ];
+
+        const step = this._pushStep(
+            `Rotate left at ${this._nodeLabel(x)}`,
+            cmd,
+            false,
+            line,
+            { x, y, beta, parent: oldParent },
+        );
+        step.renderPlan = this._buildRotationPlan(startLayout, startEdges, endLayout, endEdges, edgeMotions);
+    }
+
+    rotateRightTransaction(y: RBNode, x: RBNode): void {
+        const line = getEvalCallerLine();
+        const beta = x.right;
+        const oldParent = y.parent;
+        const side = oldParent !== this.tree.NIL && y === oldParent.left ? "left" : "right";
+
+        const startLayout = this._captureLayoutRecord();
+        const startEdges = this._captureEdges();
+
+        const cmds: Command<RBTree>[] = [new SetChildCommand(y, beta, "left")];
+        if (!beta.isNil) {
+            cmds.push(new SetParentCommand(beta, y));
+        }
+        cmds.push(new SetParentCommand(x, oldParent));
+        if (oldParent === this.tree.NIL) {
+            cmds.push(new SetRootCommand(this.tree, x));
+        } else {
+            cmds.push(new SetChildCommand(oldParent, x, side));
+        }
+        cmds.push(new SetChildCommand(x, y, "right"));
+        cmds.push(new SetParentCommand(y, x));
+
+        const cmd = new CompoundCommand(`Rotate right at ${this._nodeLabel(y)}`, cmds);
+        cmd.execute(this.tree);
+
+        const endLayout = this._captureLayoutRecord();
+        const endEdges = this._captureEdges();
+        const edgeMotions: RenderEdgeMotion[] = [
+            {
+                fromParentUid: y.uid,
+                toParentUid: y.uid,
+                fromChild: this._nodeAnchor(x),
+                toChild: beta.isNil ? this._slotAnchor(y, "left") : this._nodeAnchor(beta),
+                side: "left",
+            },
+            ...(oldParent === this.tree.NIL ? [] : [{
+                fromParentUid: oldParent.uid,
+                toParentUid: oldParent.uid,
+                fromChild: this._nodeAnchor(y),
+                toChild: this._nodeAnchor(x),
+                side,
+            } satisfies RenderEdgeMotion]),
+            {
+                fromParentUid: x.uid,
+                toParentUid: x.uid,
+                fromChild: beta.isNil ? this._slotAnchor(x, "right") : this._nodeAnchor(beta),
+                toChild: this._nodeAnchor(y),
+                side: "right",
+            },
+        ];
+
+        const step = this._pushStep(
+            `Rotate right at ${this._nodeLabel(y)}`,
+            cmd,
+            false,
+            line,
+            { x, y, beta, parent: oldParent },
+        );
+        step.renderPlan = this._buildRotationPlan(startLayout, startEdges, endLayout, endEdges, edgeMotions);
+    }
+
     removeNode(z: RBNode): void {
         const line = getEvalCallerLine();
         const cmd = new UntrackNodeCommand(z);
@@ -316,7 +572,7 @@ export class RBTSolutionBase {
 // ── Code instrumentation ────────────────────────────────────────────────
 
 const VIZ_METHOD_RE =
-    /\bthis\.(logStep|logCase|done|trackPointer|clearPointer|recolor|setRoot|insertNode|linkLeft|linkRight|linkParent|removeNode)\s*\(/;
+    /\bthis\.(logStep|logCase|done|trackPointer|clearPointer|recolor|setRoot|insertNode|linkLeft|linkRight|linkParent|moveEdge|replaceInParent|removeNode|rotateLeftTransaction|rotateRightTransaction)\s*\(/;
 
 const INTERNAL_CALL_RE =
     /\bthis\.(leftRotate|rightRotate|transplant|insertFixup|deleteFixup)\s*\(/;

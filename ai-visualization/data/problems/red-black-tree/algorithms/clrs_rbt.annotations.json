@@ -18,62 +18,12 @@
   {
     "fn": "leftRotate",
     "anchor": "let y = this.trackPointer(\"lr.y\", x.right);",
-    "annotation": { "msg": "Save x's right child as y" }
+    "annotation": { "msg": "Save x's right child as y = ${x.key}'s right" }
   },
   {
     "fn": "leftRotate",
-    "anchor": "this.linkRight(x, y.left);",
-    "annotation": { "msg": "Set x.right = y.left (give x y's left subtree)" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "this.linkParent(y.left, x);",
-    "annotation": { "msg": "Set y.left.parent = x" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "this.linkParent(y, x.parent);",
-    "annotation": { "msg": "Set y.parent = x.parent" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "if (x.parent === this.tree.NIL) {",
-    "annotation": { "question": "Is the node the root?", "answer": "Yes — set new root" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "this.setRoot(y);",
-    "annotation": { "msg": "Set y as the new root" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "} else if (x === x.parent.left) {",
-    "annotation": { "question": "Is the node the root?", "answer": "No — it is a left child" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "this.linkLeft(x.parent, y);",
-    "annotation": { "msg": "Replace x with y as parent's left child" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "} else {",
-    "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "this.linkRight(x.parent, y);",
-    "annotation": { "msg": "Replace x with y as parent's right child" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "this.linkLeft(y, x);",
-    "annotation": { "msg": "Set y.left = x (x goes under y)" }
-  },
-  {
-    "fn": "leftRotate",
-    "anchor": "this.linkParent(x, y);",
-    "annotation": { "msg": "Set x.parent = y" }
+    "anchor": "this.rotateLeftTransaction(x, y);",
+    "annotation": { "msg": "Animate the left rotation: move x.right to beta, move the parent edge to y, then attach x under y" }
   },
   {
     "fn": "leftRotate",
@@ -99,62 +49,12 @@
   {
     "fn": "rightRotate",
     "anchor": "let x = this.trackPointer(\"rr.x\", y.left);",
-    "annotation": { "msg": "Save y's left child as x" }
+    "annotation": { "msg": "Save y's left child as x = ${y.key}'s left" }
   },
   {
     "fn": "rightRotate",
-    "anchor": "this.linkLeft(y, x.right);",
-    "annotation": { "msg": "Set y.left = x.right (give y x's right subtree)" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "this.linkParent(x.right, y);",
-    "annotation": { "msg": "Set x.right.parent = y" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "this.linkParent(x, y.parent);",
-    "annotation": { "msg": "Set x.parent = y.parent" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "if (y.parent === this.tree.NIL) {",
-    "annotation": { "question": "Is the node the root?", "answer": "Yes — set new root" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "this.setRoot(x);",
-    "annotation": { "msg": "Set x as the new root" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "} else if (y === y.parent.left) {",
-    "annotation": { "question": "Is the node the root?", "answer": "No — it is a left child" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "this.linkLeft(y.parent, x);",
-    "annotation": { "msg": "Replace y with x as parent's left child" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "} else {",
-    "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "this.linkRight(y.parent, x);",
-    "annotation": { "msg": "Replace y with x as parent's right child" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "this.linkRight(x, y);",
-    "annotation": { "msg": "Set x.right = y (y goes under x)" }
-  },
-  {
-    "fn": "rightRotate",
-    "anchor": "this.linkParent(y, x);",
-    "annotation": { "msg": "Set y.parent = x" }
+    "anchor": "this.rotateRightTransaction(y, x);",
+    "annotation": { "msg": "Animate the right rotation: move y.left to beta, move the parent edge to x, then attach y under x" }
   },
   {
     "fn": "rightRotate",
@@ -179,38 +79,8 @@
   },
   {
     "fn": "transplant",
-    "anchor": "if (u.parent === this.tree.NIL) {",
-    "annotation": { "question": "Is the node the root?", "answer": "Yes — set new root" }
-  },
-  {
-    "fn": "transplant",
-    "anchor": "this.setRoot(v);",
-    "annotation": { "msg": "Set v as the new root" }
-  },
-  {
-    "fn": "transplant",
-    "anchor": "} else if (u === u.parent.left) {",
-    "annotation": { "question": "Is the node the root?", "answer": "No — it is a left child" }
-  },
-  {
-    "fn": "transplant",
-    "anchor": "this.linkLeft(u.parent, v);",
-    "annotation": { "msg": "Replace u with v as left child" }
-  },
-  {
-    "fn": "transplant",
-    "anchor": "} else {",
-    "annotation": { "question": "Is the node the root?", "answer": "No — it is a right child" }
-  },
-  {
-    "fn": "transplant",
-    "anchor": "this.linkRight(u.parent, v);",
-    "annotation": { "msg": "Replace u with v as right child" }
-  },
-  {
-    "fn": "transplant",
-    "anchor": "this.linkParent(v, u.parent);",
-    "annotation": { "msg": "Set v.parent = u.parent" }
+    "anchor": "this.replaceInParent(u, v);",
+    "annotation": { "msg": "Replace ${u.key} with ${v.isNil ? 'NIL' : v.key} in parent" }
   },
   {
     "fn": "transplant",
