@@ -309,19 +309,21 @@ export default function RedBlackTreePage() {
             <Header selectedPage="redblacktree" />
             <div className="flex flex-row items-stretch flex-grow min-h-0">
                 {/* Left panel: editors */}
-                <div className="flex flex-col justify-stretch min-h-0" style={{ width: `${leftWidth}px` }}>
-                    <SolutionEditor
-                        solutionHeight={solHeight}
-                        problem="red-black-tree"
-                        onSolutionChanged={onAlgoDataChanged}
-                        onAnnotationsLoaded={onAnnotationsLoaded}
-                        runner={runBuild}
-                        errorMessage={algoErrorMessage}
-                        activeLine={activeLine}
-                        annotations={resolvedAnnotations}
-                        defaultAnnotations={defaultResolvedAnnotations}
-                        onAnnotationEdit={onAnnotationEdit}
-                    />
+                <div className="flex flex-col min-h-0" style={{ width: `${leftWidth}px` }}>
+                    <div className="flex-1 min-h-0 flex flex-col">
+                        <SolutionEditor
+                            solutionHeight={solHeight}
+                            problem="red-black-tree"
+                            onSolutionChanged={onAlgoDataChanged}
+                            onAnnotationsLoaded={onAnnotationsLoaded}
+                            runner={runBuild}
+                            errorMessage={algoErrorMessage}
+                            activeLine={activeLine}
+                            annotations={resolvedAnnotations}
+                            defaultAnnotations={defaultResolvedAnnotations}
+                            onAnnotationEdit={onAnnotationEdit}
+                        />
+                    </div>
                     <HDivider onWidthChangeRequest={(v) => setSolHeight(solHeight + v)} />
                     <CaseEditor
                         problem="red-black-tree"

@@ -63,7 +63,7 @@ export default function CaseEditor({problem, errorMessage, caseData, onCaseDataC
     }, [fetchCaseData, problem]);
 
     return (
-    <div className="flex-grow flex flex-col items-stretch">
+    <div className="flex flex-col items-stretch">
         <div className="flex flex-row justify-between">
             <h2 className="inline-block">Case: </h2>
             {codeMode ?
@@ -81,12 +81,12 @@ export default function CaseEditor({problem, errorMessage, caseData, onCaseDataC
             </Select>
             <ClipboardButton textToCopy={caseData} className={`${buttonStyleClassNames} border-2 border-solid border-secondary-50 dark:border-secondary-950 min-w-8 ml-1 rounded px-2`}></ClipboardButton>
         </div>
-        <div className="flex-grow flex flex-col relative" ref={textRef}>
+        <div className="flex flex-col relative" ref={textRef}>
         {codeMode ? (
             <CodeView className="absolute inset-0" style={{height: `calc(${textRef.current?.clientHeight}px - 1rem)`}} lang="javascript" extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]} value={caseData} onChange={e => onCaseDataChanged(e ?? "")}>
             </CodeView>
         ) : (
-            <textarea className="flex-grow min-h-0 w-full bg-primary-50 dark:bg-primary-950 text-secondary dark:text-secondary-200" 
+            <textarea className="min-h-0 w-full h-8 bg-primary-50 dark:bg-primary-950 text-secondary dark:text-secondary-200" 
                 value={caseData} onChange={e => onCaseDataChanged(e.target.value ?? "")}>
             </textarea>
         )}
