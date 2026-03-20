@@ -30,7 +30,9 @@ export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
     let [solution, setSolution] = useState<RBTSolutionBase | null>(null);
     let [leftWidth, setLeftWidth] = useState(550);
-    let [solHeight, setSolHeight] = useState(500);
+    let [solHeight, setSolHeight] = useState(
+        typeof window !== "undefined" ? Math.max(300, window.innerHeight - 250) : 500
+    );
     let [caseErrorMessage, setCaseErrorMessage] = useState("");
     let [algoErrorMessage, setAlgoErrorMessage] = useState("");
     let [caseData, setCaseData] = useState("");
@@ -309,21 +311,19 @@ export default function RedBlackTreePage() {
             <Header selectedPage="redblacktree" />
             <div className="flex flex-row items-stretch flex-grow min-h-0">
                 {/* Left panel: editors */}
-                <div className="flex flex-col min-h-0" style={{ width: `${leftWidth}px` }}>
-                    <div className="flex-1 min-h-0 flex flex-col">
-                        <SolutionEditor
-                            solutionHeight={solHeight}
-                            problem="red-black-tree"
-                            onSolutionChanged={onAlgoDataChanged}
-                            onAnnotationsLoaded={onAnnotationsLoaded}
-                            runner={runBuild}
-                            errorMessage={algoErrorMessage}
-                            activeLine={activeLine}
-                            annotations={resolvedAnnotations}
-                            defaultAnnotations={defaultResolvedAnnotations}
-                            onAnnotationEdit={onAnnotationEdit}
-                        />
-                    </div>
+                <div className="flex flex-col justify-stretch min-h-0" style={{ width: `${leftWidth}px` }}>
+                    <SolutionEditor
+                        solutionHeight={solHeight}
+                        problem="red-black-tree"
+                        onSolutionChanged={onAlgoDataChanged}
+                        onAnnotationsLoaded={onAnnotationsLoaded}
+                        runner={runBuild}
+                        errorMessage={algoErrorMessage}
+                        activeLine={activeLine}
+                        annotations={resolvedAnnotations}
+                        defaultAnnotations={defaultResolvedAnnotations}
+                        onAnnotationEdit={onAnnotationEdit}
+                    />
                     <HDivider onWidthChangeRequest={(v) => setSolHeight(solHeight + v)} />
                     <CaseEditor
                         problem="red-black-tree"
