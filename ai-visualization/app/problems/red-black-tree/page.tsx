@@ -30,9 +30,7 @@ export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
     let [solution, setSolution] = useState<RBTSolutionBase | null>(null);
     let [leftWidth, setLeftWidth] = useState(550);
-    let [solHeight, setSolHeight] = useState(
-        typeof window !== "undefined" ? Math.max(300, window.innerHeight - 250) : 500
-    );
+    let [solHeight, setSolHeight] = useState(700);
     let [caseErrorMessage, setCaseErrorMessage] = useState("");
     let [algoErrorMessage, setAlgoErrorMessage] = useState("");
     let [caseData, setCaseData] = useState("");
