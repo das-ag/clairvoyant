@@ -66,7 +66,7 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
                 onPlayingChange(false);
                 return;
             }
-            const delay = caseStepsRef.current?.has(cur) ? intervalMs * 2 : intervalMs;
+            const delay = caseStepsRef.current?.has(cur) ? intervalMs * 4 : intervalMs;
             timerRef.current = setTimeout(() => {
                 onStepChange(cur + 1);
                 scheduleNext();
