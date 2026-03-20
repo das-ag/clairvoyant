@@ -279,6 +279,11 @@ export default function RedBlackTreePage() {
         }
     }
 
+    const handleCaseJump = useCallback((stepIdx: number) => {
+        setPlaying(false);
+        onStepChange(stepIdx);
+    }, [onStepChange]);
+
     // ── Callbacks ───────────────────────────────────────────────────
 
     const onCaseDataChanged = useCallback((raw: string) => {
@@ -359,7 +364,7 @@ export default function RedBlackTreePage() {
 
                     {/* Top-right: Case Tracker */}
                     <div className="absolute top-3 right-3 z-20">
-                        <CaseTracker cases={caseStack} onJumpToStep={onStepChange} />
+                        <CaseTracker cases={caseStack} onJumpToStep={handleCaseJump} />
                     </div>
 
                     {/* Controls overlay at bottom */}
