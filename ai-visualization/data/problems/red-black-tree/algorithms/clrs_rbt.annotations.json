@@ -12,7 +12,12 @@
   },
   {
     "fn": "leftRotate",
-    "anchor": "let y = x.right;",
+    "anchor": "this.trackPointer(\"lr.x\", x);",
+    "annotation": { "msg": "Track rotation node x = ${x.key}" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "let y = this.trackPointer(\"lr.y\", x.right);",
     "annotation": { "msg": "Save x's right child as y" }
   },
   {
@@ -70,6 +75,16 @@
     "anchor": "this.linkParent(x, y);",
     "annotation": { "msg": "Set x.parent = y" }
   },
+  {
+    "fn": "leftRotate",
+    "anchor": "this.clearPointer(\"lr.x\");",
+    "annotation": { "msg": "Clear rotation pointer lr.x" }
+  },
+  {
+    "fn": "leftRotate",
+    "anchor": "this.clearPointer(\"lr.y\");",
+    "annotation": { "msg": "Clear rotation pointer lr.y" }
+  },
 
   {
     "fn": "rightRotate",
@@ -78,7 +93,12 @@
   },
   {
     "fn": "rightRotate",
-    "anchor": "let x = y.left;",
+    "anchor": "this.trackPointer(\"rr.y\", y);",
+    "annotation": { "msg": "Track rotation node y = ${y.key}" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "let x = this.trackPointer(\"rr.x\", y.left);",
     "annotation": { "msg": "Save y's left child as x" }
   },
   {
@@ -136,11 +156,26 @@
     "anchor": "this.linkParent(y, x);",
     "annotation": { "msg": "Set y.parent = x" }
   },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.clearPointer(\"rr.x\");",
+    "annotation": { "msg": "Clear rotation pointer rr.x" }
+  },
+  {
+    "fn": "rightRotate",
+    "anchor": "this.clearPointer(\"rr.y\");",
+    "annotation": { "msg": "Clear rotation pointer rr.y" }
+  },
 
   {
     "fn": "transplant",
-    "anchor": "this.logStep({u, v});",
-    "annotation": { "msg": "Transplant: replace ${u.key} with ${v.isNil ? 'NIL' : v.key}" }
+    "anchor": "this.trackPointer(\"u\", u);",
+    "annotation": { "msg": "Transplant: mark u = ${u.key}" }
+  },
+  {
+    "fn": "transplant",
+    "anchor": "this.trackPointer(\"v\", v);",
+    "annotation": { "msg": "Transplant: mark v = ${v.isNil ? 'NIL' : v.key}" }
   },
   {
     "fn": "transplant",
@@ -176,6 +211,16 @@
     "fn": "transplant",
     "anchor": "this.linkParent(v, u.parent);",
     "annotation": { "msg": "Set v.parent = u.parent" }
+  },
+  {
+    "fn": "transplant",
+    "anchor": "this.clearPointer(\"u\");",
+    "annotation": { "msg": "Clear pointer u" }
+  },
+  {
+    "fn": "transplant",
+    "anchor": "this.clearPointer(\"v\");",
+    "annotation": { "msg": "Clear pointer v" }
   },
 
   {
@@ -469,7 +514,7 @@
   },
   {
     "fn": "delete",
-    "anchor": "let y = z;",
+    "anchor": "let y = this.trackPointer(\"y\", z);",
     "annotation": { "msg": "Initialize y to the node being deleted" }
   },
   {

@@ -58,6 +58,7 @@ export class RBTSolutionBase {
     private _annotations: ResolvedAnnotationMap = new Map();
     private _branchScope: BranchScopeMap = new Map();
     private _lastBranchLine: number | null = null;
+    private _methodParams: Record<string, any> = {};
 
     setAnnotations(annotations: ResolvedAnnotationMap): void {
         this._annotations = annotations;
@@ -77,11 +78,17 @@ export class RBTSolutionBase {
         return snap;
     }
 
-    /** Build a template evaluation context from tracked pointers + extras. */
+    /** Cache the current method's parameters so all viz methods can interpolate them. */
+    __setMethodParams(params: Record<string, any>): void {
+        this._methodParams = params;
+    }
+
+    /** Build a template evaluation context from method params, tracked pointers, and extras. */
     private _buildContext(extras?: Record<string, any>): Record<string, any> {
         const ctx: Record<string, any> = {
             tree: this.tree,
             NIL: this.tree.NIL,
+            ...this._methodParams,
         };
         for (const [name, node] of this.tree.pointers) {
             ctx[name] = node;
@@ -346,6 +353,9 @@ function instrumentCode(code: string): string {
             const paramStr = line.match(/\(([^)]*)\)/)?.[1] ?? "";
             const params = paramStr.split(",").map(p => p.trim()).filter(Boolean);
             currentParams = params.length ? `, {${params.join(", ")}}` : "";
+            if (params.length) {
+                return line.replace("{", `{ this.__setMethodParams({${params.join(", ")}});`);
+            }
             return line;
         }
 

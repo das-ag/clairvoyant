@@ -10,7 +10,8 @@ class RBTSolution {
 
     leftRotate(x) {
         this.logStep({x});
-        let y = x.right;
+        this.trackPointer("lr.x", x);
+        let y = this.trackPointer("lr.y", x.right);
         // Turn y's left subtree into x's right subtree
         this.linkRight(x, y.left);
         if (y.left !== this.tree.NIL)
@@ -27,13 +28,16 @@ class RBTSolution {
         // Put x on y's left
         this.linkLeft(y, x);
         this.linkParent(x, y);
+        this.clearPointer("lr.x");
+        this.clearPointer("lr.y");
     }
 
     // ── RIGHT-ROTATE (CLRS 13.2) ────────────────────────────────────
 
     rightRotate(y) {
         this.logStep({y});
-        let x = y.left;
+        this.trackPointer("rr.y", y);
+        let x = this.trackPointer("rr.x", y.left);
         // Turn x's right subtree into y's left subtree
         this.linkLeft(y, x.right);
         if (x.right !== this.tree.NIL)
@@ -50,12 +54,15 @@ class RBTSolution {
         // Put y on x's right
         this.linkRight(x, y);
         this.linkParent(y, x);
+        this.clearPointer("rr.x");
+        this.clearPointer("rr.y");
     }
 
     // ── RB-TRANSPLANT (CLRS 13.4) ──────────────────────────────────
 
     transplant(u, v) {
-        this.logStep({u, v});
+        this.trackPointer("u", u);
+        this.trackPointer("v", v);
         if (u.parent === this.tree.NIL) {
             this.setRoot(v);
         } else if (u === u.parent.left) {
@@ -64,6 +71,8 @@ class RBTSolution {
             this.linkRight(u.parent, v);
         }
         this.linkParent(v, u.parent);
+        this.clearPointer("u");
+        this.clearPointer("v");
     }
 
     // ── RB-INSERT (CLRS 13.3) ───────────────────────────────────────
@@ -164,7 +173,7 @@ class RBTSolution {
         this.logStep({key});
         this.trackPointer("z", z);
 
-        let y = z;
+        let y = this.trackPointer("y", z);
         let yOriginalColor = y.color;
         let x;
 
