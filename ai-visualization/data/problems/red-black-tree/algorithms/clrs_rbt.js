@@ -35,7 +35,7 @@ class RBTSolution {
     transplant(u, v) {
         this.trackPointer("u", u);
         this.trackPointer("v", v);
-        this.replaceInParent(u, v);
+        this.transplantTransaction(u, v);
         this.clearPointer("u");
         this.clearPointer("v");
     }

@@ -79,8 +79,8 @@
   },
   {
     "fn": "transplant",
-    "anchor": "this.replaceInParent(u, v);",
-    "annotation": { "msg": "Replace ${u.key} with ${v.isNil ? 'NIL' : v.key} in parent" }
+    "anchor": "this.transplantTransaction(u, v);",
+    "annotation": { "msg": "Animate the transplant: move the incoming parent edge from ${u.key} to ${v.isNil ? 'NIL' : v.key}" }
   },
   {
     "fn": "transplant",

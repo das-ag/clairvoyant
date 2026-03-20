@@ -71,8 +71,8 @@ export interface RenderEdgeMotion {
     side: "left" | "right";
 }
 
-export interface RotationRenderPlan {
-    kind: "rotation";
+export interface EdgeMotionRenderPlan {
+    kind: "rotation" | "transplant";
     startLayout: Record<number, NodePosition>;
     endLayout: Record<number, NodePosition>;
     startEdges: RenderEdge[];
@@ -80,9 +80,18 @@ export interface RotationRenderPlan {
     edgeMotions: RenderEdgeMotion[];
     edgePhaseDurationMs: number;
     layoutPhaseDurationMs: number;
+    carryNodeUids: number[];
 }
 
-export type StepRenderPlan = RotationRenderPlan;
+export interface RotationRenderPlan extends EdgeMotionRenderPlan {
+    kind: "rotation";
+}
+
+export interface TransplantRenderPlan extends EdgeMotionRenderPlan {
+    kind: "transplant";
+}
+
+export type StepRenderPlan = RotationRenderPlan | TransplantRenderPlan;
 
 // ── Solution Base ───────────────────────────────────────────────────────
 
@@ -93,6 +102,7 @@ export class RBTSolutionBase {
     private _branchScope: BranchScopeMap = new Map();
     private _lastBranchLine: number | null = null;
     private _methodParams: Record<string, any> = {};
+    private _visualLayoutByUid: Record<number, NodePosition> = {};
 
     setAnnotations(annotations: ResolvedAnnotationMap): void {
         this._annotations = annotations;
@@ -182,6 +192,7 @@ export class RBTSolutionBase {
         const msg = this._resolveMsg(line, autoMsg, extras);
         const step = new RBTStep(msg, cmd, terminal, line, this._pointerSnapshot());
         this.__steps.push(step);
+        this._visualLayoutByUid = this._captureLayoutRecord();
         return step;
     }
 
@@ -190,6 +201,11 @@ export class RBTSolutionBase {
         const record: Record<number, NodePosition> = {};
         for (const [node, pos] of layout) {
             record[node.uid] = { x: pos.x, y: pos.y };
+        }
+        for (const node of this.tree.allTrackedNodes()) {
+            if (record[node.uid]) continue;
+            const prev = this._visualLayoutByUid[node.uid];
+            if (prev) record[node.uid] = { ...prev };
         }
         return record;
     }
@@ -215,12 +231,14 @@ export class RBTSolutionBase {
         return { kind: "slot", parentUid: parent.uid, side };
     }
 
-    private _buildRotationPlan(
+    private _buildEdgeMotionPlan(
+        kind: StepRenderPlan["kind"],
         startLayout: Record<number, NodePosition>,
         startEdges: RenderEdge[],
         endLayout: Record<number, NodePosition>,
         endEdges: RenderEdge[],
         edgeMotions: RenderEdgeMotion[],
+        carryNodeUids: number[] = [],
     ): StepRenderPlan | undefined {
         const metrics = computeLayoutMetrics(new Map(
             Object.entries(startLayout).map(([uid, pos]) => [Number(uid), pos]),
@@ -228,7 +246,7 @@ export class RBTSolutionBase {
         if (metrics.hasOverlaps) return undefined;
 
         return {
-            kind: "rotation",
+            kind,
             startLayout,
             endLayout,
             startEdges,
@@ -236,6 +254,7 @@ export class RBTSolutionBase {
             edgeMotions,
             edgePhaseDurationMs: 220,
             layoutPhaseDurationMs: 320,
+            carryNodeUids,
         };
     }
 
@@ -371,6 +390,55 @@ export class RBTSolutionBase {
         );
     }
 
+    transplantTransaction(oldNode: RBNode, newNode: RBNode): void {
+        const line = getEvalCallerLine();
+        const oldParent = oldNode.parent;
+        const side = oldParent !== this.tree.NIL && oldNode === oldParent.left ? "left" : "right";
+        const startLayout = this._captureLayoutRecord();
+        const startEdges = this._captureEdges();
+
+        const cmds: Command<RBTree>[] = [
+            new SetParentCommand(newNode, oldParent),
+        ];
+        if (oldParent === this.tree.NIL) {
+            cmds.push(new SetRootCommand(this.tree, newNode));
+        } else {
+            cmds.push(new SetChildCommand(oldParent, newNode, side));
+        }
+        const cmd = new CompoundCommand(
+            `Transplant ${this._nodeLabel(oldNode)} with ${this._nodeLabel(newNode)}`,
+            cmds,
+        );
+        cmd.execute(this.tree);
+
+        const endLayout = this._captureLayoutRecord();
+        const endEdges = this._captureEdges();
+        const edgeMotions: RenderEdgeMotion[] = oldParent === this.tree.NIL ? [] : [{
+            fromParentUid: oldParent.uid,
+            toParentUid: oldParent.uid,
+            fromChild: this._nodeAnchor(oldNode),
+            toChild: newNode.isNil ? this._slotAnchor(oldParent, side) : this._nodeAnchor(newNode),
+            side,
+        }];
+
+        const step = this._pushStep(
+            `Transplant ${this._nodeLabel(oldNode)} with ${this._nodeLabel(newNode)}`,
+            cmd,
+            false,
+            line,
+            { oldNode, newNode },
+        );
+        step.renderPlan = this._buildEdgeMotionPlan(
+            "transplant",
+            startLayout,
+            startEdges,
+            endLayout,
+            endEdges,
+            edgeMotions,
+            [oldNode.uid],
+        );
+    }
+
     rotateLeftTransaction(x: RBNode, y: RBNode): void {
         const line = getEvalCallerLine();
         const beta = y.left;
@@ -429,7 +497,7 @@ export class RBTSolutionBase {
             line,
             { x, y, beta, parent: oldParent },
         );
-        step.renderPlan = this._buildRotationPlan(startLayout, startEdges, endLayout, endEdges, edgeMotions);
+        step.renderPlan = this._buildEdgeMotionPlan("rotation", startLayout, startEdges, endLayout, endEdges, edgeMotions);
     }
 
     rotateRightTransaction(y: RBNode, x: RBNode): void {
@@ -490,7 +558,7 @@ export class RBTSolutionBase {
             line,
             { x, y, beta, parent: oldParent },
         );
-        step.renderPlan = this._buildRotationPlan(startLayout, startEdges, endLayout, endEdges, edgeMotions);
+        step.renderPlan = this._buildEdgeMotionPlan("rotation", startLayout, startEdges, endLayout, endEdges, edgeMotions);
     }
 
     removeNode(z: RBNode): void {
@@ -539,6 +607,7 @@ export class RBTSolutionBase {
     getInsertSteps(key: number): RBTStep[] {
         this.__steps = [];
         this._lastBranchLine = null;
+        this._visualLayoutByUid = {};
         (this as any).insert(key);
         return this._finalizeSteps();
     }
@@ -546,6 +615,7 @@ export class RBTSolutionBase {
     getDeleteSteps(key: number): RBTStep[] {
         this.__steps = [];
         this._lastBranchLine = null;
+        this._visualLayoutByUid = {};
         (this as any).delete(key);
         return this._finalizeSteps();
     }
@@ -555,6 +625,7 @@ export class RBTSolutionBase {
         for (const key of keys) {
             this.__steps = [];
             this._lastBranchLine = null;
+            this._visualLayoutByUid = {};
             (this as any).insert(key);
         }
     }
@@ -572,7 +643,7 @@ export class RBTSolutionBase {
 // ── Code instrumentation ────────────────────────────────────────────────
 
 const VIZ_METHOD_RE =
-    /\bthis\.(logStep|logCase|done|trackPointer|clearPointer|recolor|setRoot|insertNode|linkLeft|linkRight|linkParent|moveEdge|replaceInParent|removeNode|rotateLeftTransaction|rotateRightTransaction)\s*\(/;
+    /\bthis\.(logStep|logCase|done|trackPointer|clearPointer|recolor|setRoot|insertNode|linkLeft|linkRight|linkParent|moveEdge|replaceInParent|removeNode|rotateLeftTransaction|rotateRightTransaction|transplantTransaction)\s*\(/;
 
 const INTERNAL_CALL_RE =
     /\bthis\.(leftRotate|rightRotate|transplant|insertFixup|deleteFixup)\s*\(/;
