@@ -455,8 +455,8 @@
   },
   {
     "fn": "delete",
-    "anchor": "this.linkParent(x, y);",
-    "annotation": { "msg": "Set x.parent = y (keep parent link)" }
+    "anchor": "this.moveEdgeTransaction(y, \"right\", x);",
+    "annotation": { "msg": "Keep y's right edge attached to x while synchronizing x.parent to y" }
   },
   {
     "fn": "delete",
@@ -471,13 +471,8 @@
   },
   {
     "fn": "delete",
-    "anchor": "this.linkRight(y, z.right);",
-    "annotation": { "msg": "Give y z's right subtree" }
-  },
-  {
-    "fn": "delete",
-    "anchor": "this.linkParent(y.right, y);",
-    "annotation": { "msg": "Set y.right.parent = y" }
+    "anchor": "this.moveEdgeTransaction(y, \"right\", z.right, [y]);",
+    "annotation": { "msg": "Move y.right edge to z's right subtree while keeping y visible" }
   },
   {
     "fn": "delete",
@@ -486,13 +481,8 @@
   },
   {
     "fn": "delete",
-    "anchor": "this.linkLeft(y, z.left);",
-    "annotation": { "msg": "Give y z's left subtree" }
-  },
-  {
-    "fn": "delete",
-    "anchor": "this.linkParent(y.left, y);",
-    "annotation": { "msg": "Set y.left.parent = y" }
+    "anchor": "this.moveEdgeTransaction(y, \"left\", z.left, [z]);",
+    "annotation": { "msg": "Move y.left edge to z's left subtree while keeping z visible until removal" }
   },
   {
     "fn": "delete",

@@ -157,15 +157,13 @@ class RBTSolution {
             x = this.trackPointer("x", y.right);
 
             if (y.parent === z) {
-                this.linkParent(x, y);
+                this.moveEdgeTransaction(y, "right", x);
             } else {
                 this.transplant(y, y.right);
-                this.linkRight(y, z.right);
-                this.linkParent(y.right, y);
+                this.moveEdgeTransaction(y, "right", z.right, [y]);
             }
             this.transplant(z, y);
-            this.linkLeft(y, z.left);
-            this.linkParent(y.left, y);
+            this.moveEdgeTransaction(y, "left", z.left, [z]);
             this.recolor(y, z.color);
         }
 
