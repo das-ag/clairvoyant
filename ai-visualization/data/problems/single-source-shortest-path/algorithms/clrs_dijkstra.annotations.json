@@ -1,1 +1,129 @@
-[]
+[
+  {
+    "fn": "initializeSingleSource",
+    "anchor": "for (let v of this.graph.getAllNodes()) {",
+    "annotation": {
+      "msg": "INITIALIZE-SINGLE-SOURCE: setting d[v] = ∞ and π[v] = NIL for every vertex v"
+    }
+  },
+  {
+    "fn": "initializeSingleSource",
+    "anchor": "this.updateDist(v, Infinity, null);",
+    "annotation": {
+      "msg": "d[${v.id}] ← ∞,  π[${v.id}] ← NIL"
+    }
+  },
+  {
+    "fn": "initializeSingleSource",
+    "anchor": "this.updateDist(source, 0, null);",
+    "annotation": {
+      "msg": "d[${source.id}] ← 0  (source has zero distance to itself)"
+    }
+  },
+  {
+    "fn": "relax",
+    "anchor": "this.relaxEdge(u, v, w);",
+    "annotation": {
+      "msg": "RELAX: checking edge (${u.id} → ${v.id}), weight = ${w}"
+    }
+  },
+  {
+    "fn": "relax",
+    "anchor": "if (this.getDist(v) > this.getDist(u) + w) {",
+    "annotation": {
+      "question": "Is d[${v.id}] = ${getDist(v) === Infinity ? '∞' : getDist(v)} > d[${u.id}] + w(${u.id},${v.id}) = ${getDist(u) === Infinity ? '∞' : getDist(u) + w}?",
+      "answer": "${getDist(v) > getDist(u) + w ? 'Yes — relax the edge and update d[' + v.id + ']' : 'No — current path is already optimal'}"
+    }
+  },
+  {
+    "fn": "relax",
+    "anchor": "this.updateDist(v, this.getDist(u) + w, u);",
+    "annotation": {
+      "msg": "Relax: d[${v.id}] ← ${getDist(u) + w},  π[${v.id}] ← ${u.id}"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "this.logStep({ source });",
+    "annotation": {
+      "msg": "DIJKSTRA: beginning shortest-path computation from source ${source.id}"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "this.initializeSingleSource(source);",
+    "annotation": {
+      "msg": "Call INITIALIZE-SINGLE-SOURCE to set up distance estimates"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "let S = [];",
+    "annotation": {
+      "msg": "S ← ∅  (set of settled vertices whose shortest paths are known)"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "let Q = this.graph.getAllNodes().slice();",
+    "annotation": {
+      "msg": "Q ← V  (min-priority queue containing all vertices, keyed by d[v])"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "while (Q.length > 0) {",
+    "annotation": {
+      "msg": "Loop: Q has ${Q.length} vertices remaining"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "let u = this.extractMin(Q);",
+    "annotation": {
+      "msg": "EXTRACT-MIN: remove vertex u = ${u.id} with d[u] = ${getDist(u) === Infinity ? '∞' : getDist(u)} from Q"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "S.push(u);",
+    "annotation": {
+      "msg": "S ← S ∪ {${u.id}}  (${u.id}'s shortest path is now finalised)"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "this.settle(u);",
+    "annotation": {
+      "msg": "Mark ${u.id} as settled — d[${u.id}] = ${getDist(u) === Infinity ? '∞' : getDist(u)} is optimal"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "for (let edge of this.graph.getAdjacentEdges(u)) {",
+    "annotation": {
+      "msg": "Checking edges out of ${u.id} — relaxing each neighbour"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "let v = edge.target;",
+    "annotation": {
+      "msg": "Neighbour v = ${v.id},  current d[${v.id}] = ${getDist(v) === Infinity ? '∞' : getDist(v)}"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "this.relax(u, v, edge.weight);",
+    "annotation": {
+      "msg": "Call RELAX(${u.id}, ${v.id}, ${edge.weight})"
+    }
+  },
+  {
+    "fn": "solve",
+    "anchor": "this.done({ source });",
+    "annotation": {
+      "msg": "DIJKSTRA complete — all shortest paths from ${source.id} have been computed"
+    }
+  }
+]
