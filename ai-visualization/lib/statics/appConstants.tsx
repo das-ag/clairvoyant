@@ -30,5 +30,11 @@ export const PROBLEMS : Record<string, Problem> = {
         name: "Red-Black Tree",
         href: "/problems/red-black-tree",
         docshref: "/docs/red-black-tree"
+    },
+    singlesourceshortestpath: {
+        id: "singlesourceshortestpath",
+        name: "Single Source Shortest Paths",
+        href: "/problems/single-source-shortest-path",
+        docshref: "/docs/single-source-shortest-path"
     }
 }
