@@ -1,0 +1,15 @@
+# Negative edge weight demo — requires "Allow negative weights" toggle
+# True shortest path A→D = A→C→D = 4 + (-5) = -1
+# Dijkstra incorrectly finds A→B→D = 3 + 2 = 5 (extracts D too early)
+GENERIC
+NODE A
+NODE B
+NODE C
+NODE D
+
+EDGE A B {"w": 3}
+EDGE A C {"w": 4}
+EDGE B D {"w": 2}
+EDGE C D {"w": -5}
+
+START A

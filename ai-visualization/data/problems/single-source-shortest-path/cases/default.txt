@@ -1,0 +1,21 @@
+# CLRS Figure 24.6 — classic Dijkstra example
+# Expected shortest distances from s: t=8, x=9, y=5, z=7
+GENERIC
+NODE s
+NODE t
+NODE x
+NODE y
+NODE z
+
+EDGE s t {"w": 10}
+EDGE s y {"w": 5}
+EDGE t x {"w": 1}
+EDGE t y {"w": 2}
+EDGE y t {"w": 3}
+EDGE y x {"w": 9}
+EDGE y z {"w": 2}
+EDGE x z {"w": 4}
+EDGE z x {"w": 6}
+EDGE z s {"w": 7}
+
+START s
