@@ -1,5 +1,3 @@
-# CLRS Figure 24.6 — classic Dijkstra example
-# Expected shortest distances from s: t=8, x=9, y=5, z=7
 GENERIC
 NODE s
 NODE t

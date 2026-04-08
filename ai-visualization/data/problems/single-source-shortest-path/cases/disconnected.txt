@@ -1,4 +1,3 @@
-# Graph with unreachable node — D stays at dist = ∞
 GENERIC
 NODE A
 NODE B
