@@ -27,6 +27,8 @@ import PauseIcon from "@mui/icons-material/Pause";
 import CaseTracker, { CaseEntry } from "@/app/components/controls/caseTracker";
 import { useIsMobile } from "@/app/hooks/useIsMobile";
 
+const DEMO_KEYS = [3, 9, 11, 17, 21, 27, 33, 39, 45, 51];
+
 export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
     let [solution, setSolution] = useState<RBTSolutionBase | null>(null);
@@ -56,6 +58,11 @@ export default function RedBlackTreePage() {
     const viewportVhRef = useRef(60);
     const splitHandleRef = useRef<HTMLDivElement | null>(null);
     const splitDragRef = useRef<{ startY: number; startVh: number } | null>(null);
+    const [demoMode, setDemoMode] = useState(false);
+    const demoModeRef = useRef(false);
+    demoModeRef.current = demoMode;
+    const demoPhaseRef = useRef<'insert' | 'delete'>('insert');
+    const demoIdxRef = useRef(0);
 
     // ── Annotation state ─────────────────────────────────────────────
 
@@ -339,6 +346,52 @@ export default function RedBlackTreePage() {
         };
     }, [isMobile]);
 
+    // ── Demo mode auto-cycle ─────────────────────────────────────────
+    useEffect(() => {
+        if (!demoMode || playing || !tree || !solution) return;
+
+        const sol = solution;
+        const timer = setTimeout(() => {
+            if (!demoModeRef.current) return;
+
+            finishCurrentSteps();
+
+            try {
+                let newSteps: RBTStep[];
+                if (demoPhaseRef.current === 'insert') {
+                    const key = DEMO_KEYS[demoIdxRef.current];
+                    newSteps = sol.getInsertSteps(key);
+                    demoIdxRef.current++;
+                    if (demoIdxRef.current >= DEMO_KEYS.length) {
+                        demoIdxRef.current = 0;
+                        demoPhaseRef.current = 'delete';
+                    }
+                } else {
+                    const key = DEMO_KEYS[demoIdxRef.current];
+                    newSteps = sol.getDeleteSteps(key);
+                    demoIdxRef.current++;
+                    if (demoIdxRef.current >= DEMO_KEYS.length) {
+                        demoIdxRef.current = 0;
+                        demoPhaseRef.current = 'insert';
+                    }
+                }
+                setSteps(newSteps);
+                setStepIndex(0);
+                setRenderKey((k) => k + 1);
+                setPlaying(true);
+            } catch {
+                // Key not insertable/deletable — advance cycle index and retry next tick
+                demoIdxRef.current++;
+                if (demoIdxRef.current >= DEMO_KEYS.length) {
+                    demoIdxRef.current = 0;
+                    demoPhaseRef.current = demoPhaseRef.current === 'insert' ? 'delete' : 'insert';
+                }
+            }
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [demoMode, playing, tree, solution]);
+
     // ── Render ──────────────────────────────────────────────────────
 
     return (
@@ -431,6 +484,16 @@ export default function RedBlackTreePage() {
                                             Delete
                                         </button>
                                     </div>
+                                    <button
+                                        onClick={() => setDemoMode(d => !d)}
+                                        className={`px-3 py-1 rounded text-sm border transition-colors cursor-pointer ${
+                                            demoMode
+                                                ? 'bg-secondary/20 border-secondary text-secondary dark:bg-secondary-400/20 dark:border-secondary-400 dark:text-secondary-300'
+                                                : `${buttonStyleClassNames} border-secondary-200 dark:border-secondary-800`
+                                        }`}
+                                    >
+                                        {demoMode ? 'Demo: ON' : 'Demo'}
+                                    </button>
                                 </div>
 
                                 {/* Stepper — WatchPanel hidden on mobile (too narrow) */}
@@ -618,6 +681,16 @@ export default function RedBlackTreePage() {
                                             Delete
                                         </button>
                                     </div>
+                                    <button
+                                        onClick={() => setDemoMode(d => !d)}
+                                        className={`px-3 py-1 rounded text-sm border transition-colors cursor-pointer ${
+                                            demoMode
+                                                ? 'bg-secondary/20 border-secondary text-secondary dark:bg-secondary-400/20 dark:border-secondary-400 dark:text-secondary-300'
+                                                : `${buttonStyleClassNames} border-secondary-200 dark:border-secondary-800`
+                                        }`}
+                                    >
+                                        {demoMode ? 'Demo: ON' : 'Demo'}
+                                    </button>
                                 </div>
 
                                 {/* Watch + Stepper */}
