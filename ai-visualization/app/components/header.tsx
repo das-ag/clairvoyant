@@ -15,7 +15,7 @@ export default function Header({selectedPage}: {selectedPage: string}) {
         <div className="p-3 pl-5">
             <Logo></Logo>
         </div>
-        <nav className="ps-16 flex flex-row items-stretch">
+        <nav className="ps-4 md:ps-16 hidden md:flex flex-row items-stretch">
             {links.map(link => {
                 const selected: boolean = link.id === selectedPage;
                 return (
