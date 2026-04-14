@@ -25,6 +25,7 @@ import {
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
 import CaseTracker, { CaseEntry } from "@/app/components/controls/caseTracker";
+import { useIsMobile } from "@/app/hooks/useIsMobile";
 
 export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
@@ -49,6 +50,8 @@ export default function RedBlackTreePage() {
     stepIndexRef.current = stepIndex;
     let [insertValue, setInsertValue] = useState("");
     let [deleteValue, setDeleteValue] = useState("");
+    const isMobile = useIsMobile();
+    const [activeTab, setActiveTab] = useState<'code' | 'cases'>('code');
 
     // ── Annotation state ─────────────────────────────────────────────
 
@@ -310,117 +313,92 @@ export default function RedBlackTreePage() {
     return (
         <div className="flex flex-col h-dvh overflow-hidden">
             <Header selectedPage="redblacktree" />
-            <div className="flex flex-row items-stretch flex-grow min-h-0">
-                {/* Left panel: editors */}
-                <div className="flex flex-col justify-stretch min-h-0" style={{ width: `${leftWidth}px` }}>
-                    <SolutionEditor
-                        solutionHeight={solHeight}
-                        problem="red-black-tree"
-                        onSolutionChanged={onAlgoDataChanged}
-                        onAnnotationsLoaded={onAnnotationsLoaded}
-                        runner={runBuild}
-                        errorMessage={algoErrorMessage}
-                        activeLine={activeLine}
-                        annotations={resolvedAnnotations}
-                        defaultAnnotations={defaultResolvedAnnotations}
-                        onAnnotationEdit={onAnnotationEdit}
-                    />
-                    <HDivider onWidthChangeRequest={(v) => setSolHeight(solHeight + v)} />
-                    <CaseEditor
-                        problem="red-black-tree"
-                        caseData={caseData}
-                        onCaseDataChanged={onCaseDataChanged}
-                        errorMessage={caseErrorMessage}
-                    />
-                </div>
-                <VDivider onWidthChangeRequest={(v) => setLeftWidth(leftWidth + v)} />
 
-                {/* Right panel: viewport */}
-                <div className="relative flex-grow m-2 overflow-hidden min-w-0">
-                    {/* Tree visualization fills entire panel */}
-                    <RBTView
-                        tree={tree}
-                        renderKey={renderKey}
-                        currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined}
-                        currentStepIndex={stepIndex}
-                        onFitRef={fitRef}
-                    />
+            {isMobile ? (
+                /* ── MOBILE: viewport top, tabbed editors bottom ── */
+                <div className="flex flex-col flex-grow min-h-0">
 
-                    {/* Top-left: Play/Pause + Fit */}
-                    <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
-                        {steps.length > 0 && (
+                    {/* Viewport — top 50dvh, full-width */}
+                    <div className="relative overflow-hidden" style={{ height: '50dvh' }}>
+                        <RBTView
+                            tree={tree}
+                            renderKey={renderKey}
+                            currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined}
+                            currentStepIndex={stepIndex}
+                            onFitRef={fitRef}
+                        />
+
+                        {/* Top-left: Play/Pause + Fit */}
+                        <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
+                            {steps.length > 0 && (
+                                <button
+                                    onClick={() => setPlaying(p => !p)}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm hover:bg-primary-900/90 transition-colors cursor-pointer"
+                                >
+                                    {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                                    <span>{playing ? "Pause" : "Play"} animation</span>
+                                </button>
+                            )}
                             <button
-                                onClick={() => setPlaying(p => !p)}
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm hover:bg-primary-900/90 transition-colors cursor-pointer"
+                                onClick={() => fitRef.current?.()}
+                                className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
                             >
-                                {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
-                                <span>{playing ? "Pause" : "Play"} animation</span>
+                                Fit
                             </button>
-                        )}
-                        <button
-                            onClick={() => fitRef.current?.()}
-                            className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
-                        >
-                            Fit
-                        </button>
-                    </div>
-
-                    {/* Top-center: Annotation */}
-                    {question ? (
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-md w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-sm">
-                            <div className="text-white/60 italic">Q: {question}</div>
-                            {answer && <div className="text-white font-semibold mt-0.5">A: {answer}</div>}
                         </div>
-                    ) : explanation ? (
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-md w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm">
-                            {explanation}
-                        </div>
-                    ) : null}
 
-                    {/* Top-right: Case Tracker */}
-                    <div className="absolute top-3 right-3 z-20">
-                        <CaseTracker cases={caseStack} onJumpToStep={handleCaseJump} />
-                    </div>
-
-                    {/* Controls overlay at bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
-                        <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
-                            {/* Insert / Delete controls */}
-                            <div className="flex flex-row items-center gap-2 flex-wrap">
-                                <div className="flex items-center gap-1">
-                                    <input
-                                        type="number"
-                                        value={insertValue}
-                                        onChange={(e) => setInsertValue(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === "Enter") handleInsert(); }}
-                                        placeholder="key"
-                                        className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
-                                    />
-                                    <button onClick={handleInsert} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
-                                        Insert
-                                    </button>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <input
-                                        type="number"
-                                        value={deleteValue}
-                                        onChange={(e) => setDeleteValue(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === "Enter") handleDelete(); }}
-                                        placeholder="key"
-                                        className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
-                                    />
-                                    <button onClick={handleDelete} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
-                                        Delete
-                                    </button>
-                                </div>
+                        {/* Top-center: Annotation — capped at 80vw to prevent overflow */}
+                        {question ? (
+                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-[min(28rem,80vw)] w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-sm">
+                                <div className="text-white/60 italic">Q: {question}</div>
+                                {answer && <div className="text-white font-semibold mt-0.5">A: {answer}</div>}
                             </div>
+                        ) : explanation ? (
+                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-[min(28rem,80vw)] w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm">
+                                {explanation}
+                            </div>
+                        ) : null}
 
-                            {/* Watch + Stepper */}
-                            <div className="flex flex-row gap-2 mt-2 items-start flex-wrap xl:flex-nowrap">
-                                <div className="w-48 shrink-0">
-                                    <WatchPanel entries={watchEntries} />
+                        {/* Top-right: Case Tracker */}
+                        <div className="absolute top-3 right-3 z-20">
+                            <CaseTracker cases={caseStack} onJumpToStep={handleCaseJump} />
+                        </div>
+
+                        {/* Controls overlay at bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+                            <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
+                                {/* Insert / Delete */}
+                                <div className="flex flex-row items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            type="number"
+                                            value={insertValue}
+                                            onChange={(e) => setInsertValue(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === "Enter") handleInsert(); }}
+                                            placeholder="key"
+                                            className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
+                                        />
+                                        <button onClick={handleInsert} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
+                                            Insert
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            type="number"
+                                            value={deleteValue}
+                                            onChange={(e) => setDeleteValue(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === "Enter") handleDelete(); }}
+                                            placeholder="key"
+                                            className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
+                                        />
+                                        <button onClick={handleDelete} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex-grow min-w-0">
+
+                                {/* Stepper only — WatchPanel hidden on mobile (too narrow) */}
+                                <div className="mt-2">
                                     <DebugStepper
                                         step={stepIndex}
                                         maxSteps={steps.length}
@@ -433,8 +411,184 @@ export default function RedBlackTreePage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Tab bar */}
+                    <div className="flex flex-row border-b border-secondary-200 dark:border-secondary-800 bg-secondary-100 dark:bg-secondary-900 shrink-0">
+                        <button
+                            onClick={() => setActiveTab('code')}
+                            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                                activeTab === 'code'
+                                    ? 'text-secondary dark:text-secondary-200 border-b-2 border-secondary dark:border-secondary-200'
+                                    : 'text-secondary/60 dark:text-secondary-200/60'
+                            }`}
+                        >
+                            Code
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('cases')}
+                            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                                activeTab === 'cases'
+                                    ? 'text-secondary dark:text-secondary-200 border-b-2 border-secondary dark:border-secondary-200'
+                                    : 'text-secondary/60 dark:text-secondary-200/60'
+                            }`}
+                        >
+                            Cases
+                        </button>
+                    </div>
+
+                    {/* Active editor — fills remaining height */}
+                    <div className="flex-grow min-h-0 flex flex-col overflow-hidden">
+                        {activeTab === 'code' ? (
+                            <SolutionEditor
+                                problem="red-black-tree"
+                                onSolutionChanged={onAlgoDataChanged}
+                                onAnnotationsLoaded={onAnnotationsLoaded}
+                                runner={runBuild}
+                                errorMessage={algoErrorMessage}
+                                activeLine={activeLine}
+                                annotations={resolvedAnnotations}
+                                defaultAnnotations={defaultResolvedAnnotations}
+                                onAnnotationEdit={onAnnotationEdit}
+                            />
+                        ) : (
+                            <CaseEditor
+                                problem="red-black-tree"
+                                caseData={caseData}
+                                onCaseDataChanged={onCaseDataChanged}
+                                errorMessage={caseErrorMessage}
+                            />
+                        )}
+                    </div>
                 </div>
-            </div>
+
+            ) : (
+                /* ── DESKTOP: existing layout, unchanged ── */
+                <div className="flex flex-row items-stretch flex-grow min-h-0">
+                    {/* Left panel: editors */}
+                    <div className="flex flex-col justify-stretch min-h-0" style={{ width: `${leftWidth}px` }}>
+                        <SolutionEditor
+                            solutionHeight={solHeight}
+                            problem="red-black-tree"
+                            onSolutionChanged={onAlgoDataChanged}
+                            onAnnotationsLoaded={onAnnotationsLoaded}
+                            runner={runBuild}
+                            errorMessage={algoErrorMessage}
+                            activeLine={activeLine}
+                            annotations={resolvedAnnotations}
+                            defaultAnnotations={defaultResolvedAnnotations}
+                            onAnnotationEdit={onAnnotationEdit}
+                        />
+                        <HDivider onWidthChangeRequest={(v) => setSolHeight(solHeight + v)} />
+                        <CaseEditor
+                            problem="red-black-tree"
+                            caseData={caseData}
+                            onCaseDataChanged={onCaseDataChanged}
+                            errorMessage={caseErrorMessage}
+                        />
+                    </div>
+                    <VDivider onWidthChangeRequest={(v) => setLeftWidth(leftWidth + v)} />
+
+                    {/* Right panel: viewport */}
+                    <div className="relative flex-grow m-2 overflow-hidden min-w-0">
+                        {/* Tree visualization fills entire panel */}
+                        <RBTView
+                            tree={tree}
+                            renderKey={renderKey}
+                            currentStep={stepIndex > 0 ? steps[stepIndex - 1] : undefined}
+                            currentStepIndex={stepIndex}
+                            onFitRef={fitRef}
+                        />
+
+                        {/* Top-left: Play/Pause + Fit */}
+                        <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
+                            {steps.length > 0 && (
+                                <button
+                                    onClick={() => setPlaying(p => !p)}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm hover:bg-primary-900/90 transition-colors cursor-pointer"
+                                >
+                                    {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                                    <span>{playing ? "Pause" : "Play"} animation</span>
+                                </button>
+                            )}
+                            <button
+                                onClick={() => fitRef.current?.()}
+                                className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
+                            >
+                                Fit
+                            </button>
+                        </div>
+
+                        {/* Top-center: Annotation */}
+                        {question ? (
+                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-md w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-sm">
+                                <div className="text-white/60 italic">Q: {question}</div>
+                                {answer && <div className="text-white font-semibold mt-0.5">A: {answer}</div>}
+                            </div>
+                        ) : explanation ? (
+                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-md w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm">
+                                {explanation}
+                            </div>
+                        ) : null}
+
+                        {/* Top-right: Case Tracker */}
+                        <div className="absolute top-3 right-3 z-20">
+                            <CaseTracker cases={caseStack} onJumpToStep={handleCaseJump} />
+                        </div>
+
+                        {/* Controls overlay at bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+                            <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
+                                {/* Insert / Delete controls */}
+                                <div className="flex flex-row items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            type="number"
+                                            value={insertValue}
+                                            onChange={(e) => setInsertValue(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === "Enter") handleInsert(); }}
+                                            placeholder="key"
+                                            className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
+                                        />
+                                        <button onClick={handleInsert} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
+                                            Insert
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            type="number"
+                                            value={deleteValue}
+                                            onChange={(e) => setDeleteValue(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === "Enter") handleDelete(); }}
+                                            placeholder="key"
+                                            className="w-20 px-2 py-1 rounded bg-primary-50 dark:bg-primary-950 border border-secondary-200 dark:border-secondary-800 text-sm"
+                                        />
+                                        <button onClick={handleDelete} className={`${buttonStyleClassNames} px-3 py-1 rounded text-sm`}>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Watch + Stepper */}
+                                <div className="flex flex-row gap-2 mt-2 items-start flex-wrap xl:flex-nowrap">
+                                    <div className="w-48 shrink-0">
+                                        <WatchPanel entries={watchEntries} />
+                                    </div>
+                                    <div className="flex-grow min-w-0">
+                                        <DebugStepper
+                                            step={stepIndex}
+                                            maxSteps={steps.length}
+                                            playing={playing}
+                                            onPlayingChange={setPlaying}
+                                            onStepChange={onStepChange}
+                                            caseSteps={caseStepIndices}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
