@@ -25,10 +25,12 @@ export default function SolutionEditor({
     annotations,
     defaultAnnotations,
     onAnnotationEdit,
+    hideToolbar,
 }: {
     problem: string,
     errorMessage: string,
     solutionHeight?: number,
+    hideToolbar?: boolean,
     runner: () => void,
     onSolutionChanged: (v: string) => void,
     onAnnotationsLoaded?: (entries: AnnotationEntry[]) => void,
@@ -84,13 +86,14 @@ export default function SolutionEditor({
     return (
     <div className="flex flex-col items-stretch h-full">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"></link>
+        {!hideToolbar && <>
         <div className="flex flex-row justify-between">
             <h2 className="inline-block">Algorithm: </h2>
             <button onClick={toggleTheme}>Theme: {currentTheme}</button>
         </div>
         <div className="flex flex-row mb-1">
             <Select unstyled className="flex-grow" classNames={{
-                    control: (state) => {return `${buttonStyleClassNames} rounded pl-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`}, 
+                    control: (state) => {return `${buttonStyleClassNames} rounded pl-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`},
                     option: (state) => {return `${buttonStyleClassNames} p-1`}
                 }}
                 options={defaultAlgorithms.map(n => {return {value: n, label: formatPrettyFile(n)}})}
@@ -104,6 +107,7 @@ export default function SolutionEditor({
                 <Image className="dark:invert" src="/DocScroll.png" alt="Documentation Icon" width={24} height={24}></Image>
             </a>
         </div>
+        </>}
         <div className="flex-grow flex min-h-0">
             <CodeView
                 style={solutionHeight !== undefined ? {height: `${solutionHeight}px`} : {flex: '1 1 0', minHeight: 0}}

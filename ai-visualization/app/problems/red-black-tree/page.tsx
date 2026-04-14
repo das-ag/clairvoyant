@@ -52,6 +52,10 @@ export default function RedBlackTreePage() {
     let [deleteValue, setDeleteValue] = useState("");
     const isMobile = useIsMobile();
     const [activeTab, setActiveTab] = useState<'code' | 'cases'>('code');
+    const [viewportVh, setViewportVh] = useState(60);
+    const viewportVhRef = useRef(60);
+    const splitHandleRef = useRef<HTMLDivElement | null>(null);
+    const splitDragRef = useRef<{ startY: number; startVh: number } | null>(null);
 
     // ── Annotation state ─────────────────────────────────────────────
 
@@ -308,6 +312,33 @@ export default function RedBlackTreePage() {
         setAlgoErrorMessage("");
     }, []);
 
+    // ── Mobile split-handle drag ─────────────────────────────────────
+    useEffect(() => {
+        if (!isMobile) return;
+        const handle = splitHandleRef.current;
+        if (!handle) return;
+        const onTouchStart = (e: TouchEvent) => {
+            splitDragRef.current = { startY: e.touches[0].clientY, startVh: viewportVhRef.current };
+        };
+        const onTouchMove = (e: TouchEvent) => {
+            if (!splitDragRef.current) return;
+            e.preventDefault();
+            const dy = e.touches[0].clientY - splitDragRef.current.startY;
+            const newVh = Math.max(30, Math.min(82, splitDragRef.current.startVh + (dy / window.innerHeight) * 100));
+            setViewportVh(newVh);
+            viewportVhRef.current = newVh;
+        };
+        const onTouchEnd = () => { splitDragRef.current = null; };
+        handle.addEventListener('touchstart', onTouchStart, { passive: true });
+        handle.addEventListener('touchmove', onTouchMove, { passive: false });
+        handle.addEventListener('touchend', onTouchEnd, { passive: true });
+        return () => {
+            handle.removeEventListener('touchstart', onTouchStart);
+            handle.removeEventListener('touchmove', onTouchMove);
+            handle.removeEventListener('touchend', onTouchEnd);
+        };
+    }, [isMobile]);
+
     // ── Render ──────────────────────────────────────────────────────
 
     return (
@@ -318,8 +349,9 @@ export default function RedBlackTreePage() {
                 /* ── MOBILE: viewport top, tabbed editors bottom ── */
                 <div className="flex flex-col flex-grow min-h-0">
 
-                    {/* Viewport — top 50dvh, full-width. shrink-0 prevents flex from collapsing it. */}
-                    <div className="relative overflow-hidden h-[50dvh] shrink-0">
+                    {/* Viewport — height driven by viewportVh state (default 60dvh).
+                        shrink-0 prevents flex from collapsing it when the editor expands. */}
+                    <div className="relative overflow-hidden shrink-0" style={{ height: `${viewportVh}dvh` }}>
                         <RBTView
                             tree={tree}
                             renderKey={renderKey}
@@ -332,7 +364,7 @@ export default function RedBlackTreePage() {
                             to the SVG in the spacer zone; interactive children opt back in. */}
                         <div className="absolute inset-0 z-20 flex flex-col pointer-events-none">
 
-                            {/* Top row: Play/Fit (left)  +  Case Tracker (right) */}
+                            {/* Top row: Play/Pause (left)  +  Case Tracker (right) */}
                             <div className="flex flex-row justify-between items-start p-3 gap-2 shrink-0">
                                 <div className="flex flex-col gap-2 pointer-events-auto">
                                     {steps.length > 0 && (
@@ -344,12 +376,6 @@ export default function RedBlackTreePage() {
                                             <span>{playing ? "Pause" : "Play"} animation</span>
                                         </button>
                                     )}
-                                    <button
-                                        onClick={() => fitRef.current?.()}
-                                        className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
-                                    >
-                                        Fit
-                                    </button>
                                 </div>
                                 <div className="pointer-events-auto">
                                     <CaseTracker cases={caseStack} onJumpToStep={handleCaseJump} />
@@ -422,6 +448,14 @@ export default function RedBlackTreePage() {
                         </div>
                     </div>
 
+                    {/* Split handle — drag to resize the viewport/editor split */}
+                    <div
+                        ref={splitHandleRef}
+                        className="flex items-center justify-center h-4 shrink-0 bg-secondary-100 dark:bg-secondary-900 touch-none cursor-row-resize"
+                    >
+                        <div className="w-10 h-1 rounded-full bg-secondary-400 dark:bg-secondary-600" />
+                    </div>
+
                     {/* Tab bar + Run button */}
                     <div className="flex flex-row border-b border-secondary-200 dark:border-secondary-800 bg-secondary-100 dark:bg-secondary-900 shrink-0">
                         <button
@@ -458,6 +492,7 @@ export default function RedBlackTreePage() {
                         {activeTab === 'code' ? (
                             <SolutionEditor
                                 problem="red-black-tree"
+                                hideToolbar={true}
                                 onSolutionChanged={onAlgoDataChanged}
                                 onAnnotationsLoaded={onAnnotationsLoaded}
                                 runner={runBuild}
