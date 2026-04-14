@@ -28,7 +28,7 @@ export default function SolutionEditor({
 }: {
     problem: string,
     errorMessage: string,
-    solutionHeight: number,
+    solutionHeight?: number,
     runner: () => void,
     onSolutionChanged: (v: string) => void,
     onAnnotationsLoaded?: (entries: AnnotationEntry[]) => void,
@@ -82,7 +82,7 @@ export default function SolutionEditor({
     }, [problem, fetchAlgorithm])
 
     return (
-    <div className="flex flex-col items-stretch">
+    <div className="flex flex-col items-stretch h-full">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"></link>
         <div className="flex flex-row justify-between">
             <h2 className="inline-block">Algorithm: </h2>
@@ -104,9 +104,9 @@ export default function SolutionEditor({
                 <Image className="dark:invert" src="/DocScroll.png" alt="Documentation Icon" width={24} height={24}></Image>
             </a>
         </div>
-        <div className="flex-grow flex">
+        <div className="flex-grow flex min-h-0">
             <CodeView
-                style={{height: `${solutionHeight}px`}}
+                style={solutionHeight !== undefined ? {height: `${solutionHeight}px`} : {flex: '1 1 0', minHeight: 0}}
                 lang="javascript"
                 extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]}
                 value={algoData}
