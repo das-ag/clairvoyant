@@ -165,7 +165,23 @@ export default function CodeView(props: CodeViewProps) {
         <div ref={containerRef} style={{ position: "relative" }}>
             <ReactCodeMirror
                 extensions={allExtensions}
-                onCreateEditor={(view) => { editorViewRef.current = view; }}
+                onCreateEditor={(view) => {
+                    editorViewRef.current = view;
+                    // CodeMirror sets touch-action:none on .cm-content and intercepts
+                    // touch events for selection, which prevents native scroll on mobile.
+                    // Attach passive listeners directly to the scroll container and
+                    // manually drive scrollTop so the editor is scrollable by touch.
+                    const scroller = view.scrollDOM;
+                    let startY = 0;
+                    let startScrollTop = 0;
+                    scroller.addEventListener('touchstart', (e: TouchEvent) => {
+                        startY = e.touches[0].clientY;
+                        startScrollTop = scroller.scrollTop;
+                    }, { passive: true });
+                    scroller.addEventListener('touchmove', (e: TouchEvent) => {
+                        scroller.scrollTop = startScrollTop + (startY - e.touches[0].clientY);
+                    }, { passive: true });
+                }}
                 onUpdate={showGutter ? handleUpdate : undefined}
                 {...codeMirrorProps}
             />
