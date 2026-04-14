@@ -84,7 +84,7 @@ export default function SolutionEditor({
     }, [problem, fetchAlgorithm])
 
     return (
-    <div className="flex flex-col items-stretch h-full">
+    <div className={`flex flex-col items-stretch ${solutionHeight === undefined ? 'h-full' : ''}`}>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"></link>
         {!hideToolbar && <>
         <div className="flex flex-row justify-between">
