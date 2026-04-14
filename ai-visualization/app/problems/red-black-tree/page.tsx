@@ -328,45 +328,55 @@ export default function RedBlackTreePage() {
                             onFitRef={fitRef}
                         />
 
-                        {/* Top-left: Play/Pause + Fit */}
-                        <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
-                            {steps.length > 0 && (
-                                <button
-                                    onClick={() => setPlaying(p => !p)}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm hover:bg-primary-900/90 transition-colors cursor-pointer"
-                                >
-                                    {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
-                                    <span>{playing ? "Pause" : "Play"} animation</span>
-                                </button>
-                            )}
-                            <button
-                                onClick={() => fitRef.current?.()}
-                                className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
-                            >
-                                Fit
-                            </button>
-                        </div>
+                        {/* Single overlay column — pointer-events-none so touch passes through
+                            to the SVG in the spacer zone; interactive children opt back in. */}
+                        <div className="absolute inset-0 z-20 flex flex-col pointer-events-none">
 
-                        {/* Top-center: Annotation — capped at 80vw to prevent overflow */}
-                        {question ? (
-                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-[min(28rem,80vw)] w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-sm">
-                                <div className="text-white/60 italic">Q: {question}</div>
-                                {answer && <div className="text-white font-semibold mt-0.5">A: {answer}</div>}
+                            {/* Top row: Play/Fit (left)  +  Case Tracker (right) */}
+                            <div className="flex flex-row justify-between items-start p-3 gap-2 shrink-0">
+                                <div className="flex flex-col gap-2 pointer-events-auto">
+                                    {steps.length > 0 && (
+                                        <button
+                                            onClick={() => setPlaying(p => !p)}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm hover:bg-primary-900/90 transition-colors cursor-pointer"
+                                        >
+                                            {playing ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                                            <span>{playing ? "Pause" : "Play"} animation</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => fitRef.current?.()}
+                                        className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
+                                    >
+                                        Fit
+                                    </button>
+                                </div>
+                                <div className="pointer-events-auto">
+                                    <CaseTracker cases={caseStack} onJumpToStep={handleCaseJump} />
+                                </div>
                             </div>
-                        ) : explanation ? (
-                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 max-w-[min(28rem,80vw)] w-full px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm">
-                                {explanation}
-                            </div>
-                        ) : null}
 
-                        {/* Top-right: Case Tracker */}
-                        <div className="absolute top-3 right-3 z-20">
-                            <CaseTracker cases={caseStack} onJumpToStep={handleCaseJump} />
-                        </div>
+                            {/* Annotation: flows naturally below top row — no overlap possible */}
+                            {question ? (
+                                <div className="px-2 shrink-0 pointer-events-auto">
+                                    <div className="px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-sm">
+                                        <div className="text-white/60 italic">Q: {question}</div>
+                                        {answer && <div className="text-white font-semibold mt-0.5">A: {answer}</div>}
+                                    </div>
+                                </div>
+                            ) : explanation ? (
+                                <div className="px-2 shrink-0 pointer-events-auto">
+                                    <div className="px-4 py-2 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-sm">
+                                        {explanation}
+                                    </div>
+                                </div>
+                            ) : null}
 
-                        {/* Controls overlay at bottom */}
-                        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
-                            <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
+                            {/* Spacer — tree is visible and touch-pannable here */}
+                            <div className="flex-grow" />
+
+                            {/* Bottom controls */}
+                            <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800 shrink-0">
                                 {/* Insert / Delete */}
                                 <div className="flex flex-row items-center gap-2 flex-wrap">
                                     <div className="flex items-center gap-1">
@@ -397,7 +407,7 @@ export default function RedBlackTreePage() {
                                     </div>
                                 </div>
 
-                                {/* Stepper only — WatchPanel hidden on mobile (too narrow) */}
+                                {/* Stepper — WatchPanel hidden on mobile (too narrow) */}
                                 <div className="mt-2">
                                     <DebugStepper
                                         step={stepIndex}
@@ -412,7 +422,7 @@ export default function RedBlackTreePage() {
                         </div>
                     </div>
 
-                    {/* Tab bar */}
+                    {/* Tab bar + Run button */}
                     <div className="flex flex-row border-b border-secondary-200 dark:border-secondary-800 bg-secondary-100 dark:bg-secondary-900 shrink-0">
                         <button
                             onClick={() => setActiveTab('code')}
@@ -433,6 +443,13 @@ export default function RedBlackTreePage() {
                             }`}
                         >
                             Cases
+                        </button>
+                        {/* Run button — mobile only, lets the user re-run from either tab */}
+                        <button
+                            onClick={runBuild}
+                            className={`${buttonStyleClassNames} px-4 py-2 text-sm font-medium shrink-0 border-l border-secondary-200 dark:border-secondary-800`}
+                        >
+                            ▶ Run
                         </button>
                     </div>
 
