@@ -550,6 +550,39 @@ export default function RBTView({ tree, renderKey, currentStep, currentStepIndex
         }
     }, [isDragging]);
 
+    // ── Touch pan ───────────────────────────────────────────────────
+    const handleTouchStart = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        setIsDragging(true);
+        dragStartRef.current = { mx: touch.clientX, my: touch.clientY, vbx: viewBox.x, vby: viewBox.y };
+    }, [viewBox.x, viewBox.y]);
+
+    const handleTouchEnd = useCallback(() => {
+        setIsDragging(false);
+        dragStartRef.current = null;
+    }, []);
+
+    // touchmove must be registered as non-passive so e.preventDefault() can
+    // block the browser's scroll while the user is panning the canvas.
+    useEffect(() => {
+        const svg = svgRef.current;
+        if (!svg) return;
+        const onTouchMove = (e: TouchEvent) => {
+            if (!dragStartRef.current || !svgRef.current || e.touches.length !== 1) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const start = dragStartRef.current;
+            const rect = svgRef.current.getBoundingClientRect();
+            const dx = (touch.clientX - start.mx) / rect.width * viewBox.w;
+            const dy = (touch.clientY - start.my) / rect.height * viewBox.h;
+            setViewBox((vb) => ({ ...vb, x: start.vbx - dx, y: start.vby - dy }));
+            userTransformedRef.current = true;
+        };
+        svg.addEventListener('touchmove', onTouchMove, { passive: false });
+        return () => svg.removeEventListener('touchmove', onTouchMove);
+    }, [viewBox.w, viewBox.h]);
+
     if (!tree || finalLayout.size === 0) {
         return (
             <div className="flex items-center justify-center h-full opacity-40 text-sm">
@@ -579,6 +612,8 @@ export default function RBTView({ tree, renderKey, currentStep, currentStepIndex
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
             >
                 {/* Edges */}
                 {display.edges.map((edge) => (
