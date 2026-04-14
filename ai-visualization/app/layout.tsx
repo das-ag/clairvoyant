@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="overflow-hidden">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -27,7 +27,7 @@ export default function RootLayout({
         <title>{metadata.title as string}</title>
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${inter.className} w-full h-screen bg-primary-100 dark:bg-primary-900 text-primary dark:text-primary-200`}>{children}</body>
+      <body className={`${inter.className} w-full h-dvh overflow-hidden bg-primary-100 dark:bg-primary-900 text-primary dark:text-primary-200`}>{children}</body>
     </html>
   )
 }
