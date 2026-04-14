@@ -525,13 +525,14 @@ export default function RBTView({ tree, renderKey, currentStep, currentStepIndex
 
     const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
         if (!isDragging || !dragStartRef.current || !svgRef.current) return;
+        const start = dragStartRef.current;
         const rect = svgRef.current.getBoundingClientRect();
-        const dx = (e.clientX - dragStartRef.current.mx) / rect.width * viewBox.w;
-        const dy = (e.clientY - dragStartRef.current.my) / rect.height * viewBox.h;
+        const dx = (e.clientX - start.mx) / rect.width * viewBox.w;
+        const dy = (e.clientY - start.my) / rect.height * viewBox.h;
         setViewBox((vb) => ({
             ...vb,
-            x: dragStartRef.current!.vbx - dx,
-            y: dragStartRef.current!.vby - dy,
+            x: start.vbx - dx,
+            y: start.vby - dy,
         }));
         userTransformedRef.current = true;
     }, [isDragging, viewBox.w, viewBox.h]);
