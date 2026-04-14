@@ -18,6 +18,18 @@ p {
   margin-bottom: 1rem;
 }
 
+/* CodeMirror touch scrolling on mobile.
+   CM6 sets touch-action:none on .cm-content to intercept touch for selection;
+   on mobile we override it to restore native pan-y so the editor is scrollable. */
+@media (max-width: 767px) {
+  .cm-content {
+    touch-action: pan-y !important;
+  }
+  .cm-scroller {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* IDE-style active-algorithm-line highlight (debug stepper) */
 .cm-active-algorithm-line {
   background-color: rgba(255, 255, 0, 0.12);

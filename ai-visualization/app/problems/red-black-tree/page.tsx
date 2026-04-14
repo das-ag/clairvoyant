@@ -318,8 +318,8 @@ export default function RedBlackTreePage() {
                 /* ── MOBILE: viewport top, tabbed editors bottom ── */
                 <div className="flex flex-col flex-grow min-h-0">
 
-                    {/* Viewport — top 50dvh, full-width */}
-                    <div className="relative overflow-hidden" style={{ height: '50dvh' }}>
+                    {/* Viewport — top 50dvh, full-width. shrink-0 prevents flex from collapsing it. */}
+                    <div className="relative overflow-hidden h-[50dvh] shrink-0">
                         <RBTView
                             tree={tree}
                             renderKey={renderKey}
