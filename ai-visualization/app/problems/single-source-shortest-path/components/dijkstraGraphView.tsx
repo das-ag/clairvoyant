@@ -35,7 +35,10 @@ const VIS_OPTIONS: VisGraphOptions = {
     edges: {
         font: EDGE_LABEL_FONT,
         color: { color: "#94a3b8", highlight: "#ffffff" },
-        smooth: { enabled: true, type: "dynamic", roundness: 0.4 },
+        // Curved edges pull the path off the straight line between nodes,
+        // so the weight chip doesn't sit directly on top of intervening
+        // nodes or other edges at the midpoint.
+        smooth: { enabled: true, type: "curvedCW", roundness: 0.2 },
         arrows: { to: { enabled: true, scaleFactor: 0.6 } },
     },
     nodes: {
@@ -47,19 +50,29 @@ const VIS_OPTIONS: VisGraphOptions = {
         margin: { top: 8, right: 12, bottom: 8, left: 12 },
     } as any,
     physics: {
-        barnesHut: {
-            gravitationalConstant: -2000,
-            springConstant: 0.006,
-            springLength: 160,
-            centralGravity: 0.4,
-            avoidOverlap: 0.8,
+        solver: "forceAtlas2Based",
+        forceAtlas2Based: {
+            // Strong node-level repulsion and long springs push vertices
+            // far apart so edge weight chips have room to float clear of
+            // other nodes and edges.
+            gravitationalConstant: -260,
+            centralGravity: 0.005,
+            springConstant: 0.05,
+            springLength: 320,
+            damping: 0.6,
+            avoidOverlap: 1,
         },
+        minVelocity: 0.3,
         stabilization: {
             enabled: true,
-            iterations: 400,
+            iterations: 2000,
             fit: true,
         },
     },
+    layout: {
+        improvedLayout: true,
+        randomSeed: 2,
+    } as any,
     height: "100%",
     interaction: {
         hover: true,
