@@ -32,7 +32,7 @@ const EDGE_LABEL_FONT: Font = {
 const VIS_OPTIONS: VisGraphOptions = {
     edges: {
         font: EDGE_LABEL_FONT,
-        color: { color: "#666688", highlight: "#ffffff" },
+        color: { color: "#94a3b8", highlight: "#ffffff" },
         smooth: { enabled: true, type: "dynamic", roundness: 0.4 },
         arrows: { to: { enabled: true, scaleFactor: 0.6 } },
     },
@@ -60,12 +60,15 @@ const VIS_OPTIONS: VisGraphOptions = {
 
 // ── Node / edge colour helpers ────────────────────────────────────────────────
 
+// Palette picked from Wong's 8-class colorblind-safe set so that the four
+// node states remain pairwise distinguishable under deuteranopia/protanopia
+// and so none of them collide with the source node's white-bordered diamond.
 function nodeColor(state: string | undefined, isExtracting: boolean): string {
-    if (isExtracting) return "#f59e0b"; // amber — being extracted
+    if (isExtracting) return "#D55E00"; // vermilion — being extracted
     switch (state) {
-        case "settled": return "#22c55e"; // green
-        case "relaxed": return "#facc15"; // yellow
-        default:        return "#64748b"; // slate — unvisited
+        case "settled": return "#009E73"; // teal-green
+        case "relaxed": return "#F0E442"; // pure yellow
+        default:        return "#56B4E9"; // sky blue — unvisited
     }
 }
 
@@ -93,9 +96,11 @@ function getNodeOptions(
         size: isSource ? 18 : 14,
         font: {
             ...BASE_FONT,
-            color: state === "settled" || isExtracting ? FONT_ON_BRIGHT_FILL : FONT_COLOR,
-            strokeColor: state === "settled" || isExtracting ? "#ffffff80" : FONT_STROKE,
-            strokeWidth: state === "settled" || isExtracting ? 0 : BASE_FONT.strokeWidth,
+            // Dark text for the brightest fills (relaxed yellow, settled teal),
+            // white with a halo for the darker fills (unvisited blue, extracting vermilion).
+            color: state === "settled" || state === "relaxed" ? FONT_ON_BRIGHT_FILL : FONT_COLOR,
+            strokeColor: state === "settled" || state === "relaxed" ? "#ffffff80" : FONT_STROKE,
+            strokeWidth: state === "settled" || state === "relaxed" ? 0 : BASE_FONT.strokeWidth,
         },
     };
 }
@@ -107,7 +112,7 @@ function getEdgeOptions(
     const minW = 1.5, maxW = 10;
     const width = Math.min(maxW, minW + Math.max(0, Math.log2(Math.abs(edge.weight) + 1)));
     return {
-        color: isRelaxing ? "#f59e0b" : undefined, // amber when relaxing, default otherwise
+        color: isRelaxing ? "#D55E00" : undefined, // vermilion when relaxing; matches "extracting"
         width: isRelaxing ? width + 1.5 : width,
         label: String(edge.weight),
         arrows: edge.isBidirectional ? "" : "to",
