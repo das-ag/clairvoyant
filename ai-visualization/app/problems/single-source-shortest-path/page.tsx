@@ -44,6 +44,7 @@ export default function SingleSourceShortestPathPage() {
     const [renderKey, setRenderKey] = useState(0);
     const [playing, setPlaying] = useState(false);
     const [allowNegativeWeights, setAllowNegativeWeights] = useState(false);
+    const [layoutSeed, setLayoutSeed] = useState(1);
 
     const stepsRef = useRef(steps);
     stepsRef.current = steps;
@@ -183,6 +184,7 @@ export default function SingleSourceShortestPathPage() {
         setSteps(newSteps);
         setStepIndex(0);
         setRenderKey(k => k + 1);
+        setLayoutSeed(1);
         setCaseErrorMessage("");
         setAlgoErrorMessage("");
         toast.success(`Ready — ${newSteps.length} steps recorded`);
@@ -274,6 +276,7 @@ export default function SingleSourceShortestPathPage() {
                         renderKey={renderKey}
                         currentStep={currentStep}
                         onFitRef={fitRef}
+                        layoutSeed={layoutSeed}
                     />
 
                     {/* Top-left: Play/Pause + Fit */}
@@ -292,6 +295,13 @@ export default function SingleSourceShortestPathPage() {
                             className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
                         >
                             Fit
+                        </button>
+                        <button
+                            onClick={() => setLayoutSeed(s => s + 1)}
+                            title="Re-run the auto-layout with a different starting configuration"
+                            className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
+                        >
+                            Re-layout
                         </button>
                     </div>
 
