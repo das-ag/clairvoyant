@@ -6,7 +6,7 @@ import * as vis from "vis-network";
 import { Font, NodeOptions } from "vis-network";
 import { GenericGraph } from "@/lib/graphs/graph";
 import { GraphNode } from "@/lib/graphs/components";
-import { computeWebcolaLayout } from "@/lib/graphs/webcolaLayout";
+import { computeBestLayout } from "@/lib/graphs/webcolaLayout";
 import { DijkstraStep } from "@/lib/dijkstra/dijkstraSolution";
 
 // ── vis.js options ────────────────────────────────────────────────────────────
@@ -214,7 +214,13 @@ export default function DijkstraGraphView({
 
     const positions = useMemo(() => {
         if (!graph) return new Map<string, { x: number; y: number }>();
-        return computeWebcolaLayout(graph, { jitterSeed: layoutSeed || 1 });
+        // Try a pool of seeds on every layout change and pick the one with
+        // fewest edge crossings so the *default* layout is already decent —
+        // users don't have to click Re-layout to escape a bad seed. Each
+        // Re-layout click advances `layoutSeed`, which shifts the pool of
+        // seeds we search so the next attempt is a genuinely different
+        // best-of-N rather than the same winner.
+        return computeBestLayout(graph, { seedBatch: Math.max(0, (layoutSeed ?? 1) - 1) });
     }, [graph, layoutSeed]);
 
     const rebuildVisData = useCallback(() => {

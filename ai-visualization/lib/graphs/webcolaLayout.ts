@@ -94,6 +94,114 @@ export function computeWebcolaLayout(
 }
 
 /**
+ * Compute several candidate layouts with different seeds and return the one
+ * with the fewest edge crossings (tie-broken by maximum minimum pairwise
+ * node distance). Each `seedBatch` click advances to a new slice of seeds,
+ * so "Re-layout" reliably finds a *different* best-of-N layout instead of
+ * cycling through the same deterministic ones.
+ *
+ * Cost is `numCandidates × computeWebcolaLayout`, i.e. ~8 × ≤10ms = ~80ms
+ * on graphs with V ≤ 20. Called once per layout change, never per step.
+ */
+export function computeBestLayout(
+    graph: GenericGraph,
+    opts: LayoutOptions & {
+        numCandidates?: number;
+        seedBatch?: number;
+    } = {},
+): Map<string, { x: number; y: number }> {
+    const numCandidates = opts.numCandidates ?? 8;
+    const seedBatch = opts.seedBatch ?? 0;
+
+    let best: Map<string, { x: number; y: number }> | null = null;
+    let bestScore = Infinity;
+    for (let i = 0; i < numCandidates; i++) {
+        const jitterSeed = seedBatch * numCandidates + i + 1;
+        const positions = computeWebcolaLayout(graph, { ...opts, jitterSeed });
+        const score = scoreLayout(graph, positions);
+        if (score < bestScore) {
+            bestScore = score;
+            best = positions;
+        }
+    }
+    return best ?? new Map();
+}
+
+/**
+ * Lower is better. Edge crossings dominate (the user's primary complaint);
+ * minimum pairwise node distance is the tiebreaker so when several
+ * candidates tie on crossings we pick the most spread-out.
+ */
+function scoreLayout(
+    graph: GenericGraph,
+    positions: Map<string, { x: number; y: number }>,
+): number {
+    const crossings = countEdgeCrossings(graph, positions);
+    const minDist = minPairwiseDistance(positions);
+    return crossings * 1_000_000 - minDist;
+}
+
+function countEdgeCrossings(
+    graph: GenericGraph,
+    positions: Map<string, { x: number; y: number }>,
+): number {
+    const edges = graph.getAllEdges().map(e => ({
+        from: e.source.id,
+        to: e.target.id,
+        p1: positions.get(e.source.id),
+        p2: positions.get(e.target.id),
+    })).filter(e => e.p1 && e.p2);
+
+    let crossings = 0;
+    for (let i = 0; i < edges.length; i++) {
+        for (let j = i + 1; j < edges.length; j++) {
+            const a = edges[i];
+            const b = edges[j];
+            // Skip pairs that share an endpoint — they meet at a node, not
+            // a crossing.
+            if (a.from === b.from || a.from === b.to ||
+                a.to === b.from || a.to === b.to) continue;
+            if (segmentsIntersect(a.p1!, a.p2!, b.p1!, b.p2!)) {
+                crossings++;
+            }
+        }
+    }
+    return crossings;
+}
+
+function minPairwiseDistance(
+    positions: Map<string, { x: number; y: number }>,
+): number {
+    const coords = [...positions.values()];
+    let min = Infinity;
+    for (let i = 0; i < coords.length; i++) {
+        for (let j = i + 1; j < coords.length; j++) {
+            const dx = coords[i].x - coords[j].x;
+            const dy = coords[i].y - coords[j].y;
+            const d = Math.hypot(dx, dy);
+            if (d < min) min = d;
+        }
+    }
+    return min === Infinity ? 0 : min;
+}
+
+type Pt = { x: number; y: number };
+
+function segmentsIntersect(p1: Pt, p2: Pt, p3: Pt, p4: Pt): boolean {
+    const d1 = direction(p3, p4, p1);
+    const d2 = direction(p3, p4, p2);
+    const d3 = direction(p1, p2, p3);
+    const d4 = direction(p1, p2, p4);
+    if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+        ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true;
+    return false;
+}
+
+function direction(a: Pt, b: Pt, c: Pt): number {
+    return (c.x - a.x) * (b.y - a.y) - (b.x - a.x) * (c.y - a.y);
+}
+
+/**
  * Small, fast, seeded PRNG — good enough for perturbing initial positions
  * so the re-layout button can produce reproducible alternate layouts.
  */
