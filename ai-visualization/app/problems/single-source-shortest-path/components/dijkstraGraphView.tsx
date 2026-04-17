@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import VisGraph, { GraphData, Options as VisGraphOptions } from "react-vis-graph-wrapper";
 import * as vis from "vis-network";
 import { Font, NodeOptions } from "vis-network";
 import { GenericGraph } from "@/lib/graphs/graph";
 import { GraphNode } from "@/lib/graphs/components";
+import { computeWebcolaLayout } from "@/lib/graphs/webcolaLayout";
 import { DijkstraStep } from "@/lib/dijkstra/dijkstraSolution";
 
 // ── vis.js options ────────────────────────────────────────────────────────────
@@ -49,30 +50,10 @@ const VIS_OPTIONS: VisGraphOptions = {
         heightConstraint: { minimum: NODE_MIN_HEIGHT, valign: "middle" },
         margin: { top: 8, right: 12, bottom: 8, left: 12 },
     } as any,
-    physics: {
-        solver: "forceAtlas2Based",
-        forceAtlas2Based: {
-            // Strong node-level repulsion and long springs push vertices
-            // far apart so edge weight chips have room to float clear of
-            // other nodes and edges.
-            gravitationalConstant: -260,
-            centralGravity: 0.005,
-            springConstant: 0.05,
-            springLength: 320,
-            damping: 0.6,
-            avoidOverlap: 1,
-        },
-        minVelocity: 0.3,
-        stabilization: {
-            enabled: true,
-            iterations: 2000,
-            fit: true,
-        },
-    },
-    layout: {
-        improvedLayout: true,
-        randomSeed: 2,
-    } as any,
+    // Physics disabled — layout is computed by webcola upstream and fed as
+    // {x, y} on each node. vis-network just renders the result. Nodes stay
+    // draggable because interaction.dragNodes is unaffected.
+    physics: { enabled: false },
     height: "100%",
     interaction: {
         hover: true,
@@ -213,6 +194,12 @@ interface DijkstraGraphViewProps {
     renderKey: number;
     currentStep?: DijkstraStep;
     onFitRef?: React.MutableRefObject<(() => void) | null>;
+    /**
+     * Bumping this seed re-runs webcola with a different initial jitter,
+     * producing a different (usually also clean) layout — the user-facing
+     * "Re-layout" button wires into this.
+     */
+    layoutSeed?: number;
 }
 
 export default function DijkstraGraphView({
@@ -220,9 +207,15 @@ export default function DijkstraGraphView({
     renderKey,
     currentStep,
     onFitRef,
+    layoutSeed,
 }: DijkstraGraphViewProps) {
     const [visData, setVisData] = useState<GraphData>({ nodes: [], edges: [] });
     const networkRef = useRef<vis.Network | null>(null);
+
+    const positions = useMemo(() => {
+        if (!graph) return new Map<string, { x: number; y: number }>();
+        return computeWebcolaLayout(graph, { jitterSeed: layoutSeed || 1 });
+    }, [graph, layoutSeed]);
 
     const rebuildVisData = useCallback(() => {
         if (!graph) { setVisData({ nodes: [], edges: [] }); return; }
@@ -236,14 +229,17 @@ export default function DijkstraGraphView({
             const isSource = node.id === sourceId;
             const isExtracting = node.id === extractingId;
             const isExploring = node.id === exploringId;
+            const pos = positions.get(node.id);
             if (isSource) {
                 const state: string = node.data["state"] ?? "";
                 const fill = nodeColor(state, isExtracting);
                 const stroke = isExploring ? EXPLORING_BORDER : "#ffffff";
-                return makeSourceNode(node.id, fill, stroke);
+                return { ...makeSourceNode(node.id, fill, stroke), x: pos?.x, y: pos?.y };
             }
             return {
                 id: node.id,
+                x: pos?.x,
+                y: pos?.y,
                 ...getNodeOptions(node, isExtracting, isExploring),
             };
         });
@@ -261,10 +257,13 @@ export default function DijkstraGraphView({
         });
 
         setVisData({ nodes, edges });
-    }, [graph, currentStep]);
+    }, [graph, currentStep, positions]);
 
     useEffect(() => {
         rebuildVisData();
+        // Fit the precomputed layout into the viewport whenever node data
+        // rebuilds. Without physics there's no stabilization event to hook.
+        networkRef.current?.fit({ animation: false });
     }, [rebuildVisData, renderKey]);
 
     // Expose fit function through the ref
@@ -284,9 +283,6 @@ export default function DijkstraGraphView({
                 options={VIS_OPTIONS}
                 getNetwork={(network: vis.Network) => {
                     networkRef.current = network;
-                    network.once("stabilizationIterationsDone", () => {
-                        network.fit({ animation: false });
-                    });
                     if (onFitRef) {
                         onFitRef.current = () => {
                             network.fit({ animation: { duration: 300, easingFunction: "easeInOutQuad" } });
