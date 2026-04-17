@@ -409,24 +409,84 @@ const SKIP_RE =
 
 const METHOD_DECL_RE = /^\s+(?!while\b|if\b|for\b)\w+\s*\(.*\)\s*\{/;
 
+const LET_CONST_DECL_RE = /\b(?:let|const)\s+([A-Za-z_$][\w$]*)\s*=/g;
+const FOR_OF_IN_RE = /\bfor\s*\(\s*(?:let|const|var)\s+([A-Za-z_$][\w$]*)\s+(?:of|in)\b/;
+const FOR_CLASSIC_RE = /\bfor\s*\(\s*(?:let|const|var)\s+([A-Za-z_$][\w$]*)\s*=/;
+
 function instrumentCode(code: string): string {
     const lines = code.split("\n");
-    let currentParams = "";
+    // Stack of lexical scopes, outermost first. Each scope holds identifiers
+    // that came into binding within that block and are thus safe to reference
+    // from `__tick` extras while the scope is live.
+    const scopes: Set<string>[] = [new Set<string>()];
+
+    function currentParams(): string {
+        const all = new Set<string>();
+        for (const s of scopes) for (const id of s) all.add(id);
+        if (all.size === 0) return "";
+        return `, {${[...all].join(", ")}}`;
+    }
 
     const result = lines.map((line, i) => {
         const lineNum = i + 1;
         const trimmed = line.trim();
 
+        // ── Scope bookkeeping (runs for every line, regardless of emit path) ──
+        const openBraces = (line.match(/\{/g) ?? []).length;
+        const closeBraces = (line.match(/\}/g) ?? []).length;
+        const net = openBraces - closeBraces;
+
+        // Pop before push for lines that close then open (e.g. `} else {`).
+        // For balanced single-line blocks (`constructor(g) { ...; }`) net === 0,
+        // so we leave the stack alone — the binding that would have lived
+        // inside that line's block has no subsequent line to observe it.
+        if (net < 0) {
+            for (let k = 0; k < -net; k++) {
+                if (scopes.length > 1) scopes.pop();
+            }
+        }
+
+        const methodMatch = line.match(METHOD_DECL_RE);
+        const isMethodDecl = !!methodMatch && !INTERNAL_CALL_RE.test(line);
+        const methodParamNames: string[] = isMethodDecl
+            ? (line.match(/\(([^)]*)\)/)?.[1] ?? "")
+                  .split(",")
+                  .map(p => p.trim())
+                  .filter(Boolean)
+            : [];
+
+        const forOfMatch = line.match(FOR_OF_IN_RE);
+        const forClassicMatch = line.match(FOR_CLASSIC_RE);
+        const forParam = forOfMatch?.[1] ?? forClassicMatch?.[1] ?? null;
+
+        if (net > 0) {
+            for (let k = 0; k < net; k++) scopes.push(new Set<string>());
+            // Method params and for-loop binders live in the newly opened scope.
+            const top = scopes[scopes.length - 1];
+            for (const p of methodParamNames) top.add(p);
+            if (forParam) top.add(forParam);
+        }
+
+        // Plain `let X = …` / `const X = …` outside any for-head attach to the
+        // innermost live scope. Strip for-parens first to avoid picking up the
+        // loop variable again.
+        const declScannable = line.replace(/for\s*\([^)]*\)/g, "");
+        LET_CONST_DECL_RE.lastIndex = 0;
+        let declMatch: RegExpExecArray | null;
+        while ((declMatch = LET_CONST_DECL_RE.exec(declScannable)) !== null) {
+            scopes[scopes.length - 1].add(declMatch[1]);
+        }
+
+        // ── Emit (existing rewrite logic, now using dynamic scope) ────────────
         if (SKIP_RE.test(trimmed)) return line;
         if (trimmed.endsWith(".prototype;")) return line;
 
-        const methodMatch = line.match(METHOD_DECL_RE);
-        if (methodMatch && !INTERNAL_CALL_RE.test(line)) {
-            const paramStr = line.match(/\(([^)]*)\)/)?.[1] ?? "";
-            const params = paramStr.split(",").map(p => p.trim()).filter(Boolean);
-            currentParams = params.length ? `, {${params.join(", ")}}` : "";
-            if (params.length) {
-                return line.replace("{", `{ this.__setMethodParams({${params.join(", ")}});`);
+        if (isMethodDecl) {
+            if (methodParamNames.length) {
+                return line.replace(
+                    "{",
+                    `{ this.__setMethodParams({${methodParamNames.join(", ")}});`,
+                );
             }
             return line;
         }
@@ -434,16 +494,18 @@ function instrumentCode(code: string): string {
         if (VIZ_METHOD_RE.test(line)) return line;
         if (IF_ELSE_RE.test(trimmed)) return line;
 
+        const params = currentParams();
+
         if (WHILE_RE.test(line)) {
-            return line.replace("{", `{ this.__tick(${lineNum}${currentParams});`);
+            return line.replace("{", `{ this.__tick(${lineNum}${params});`);
         }
 
         if (INTERNAL_CALL_RE.test(line)) {
             const indent = line.match(/^(\s*)/)?.[1] ?? "";
-            return `${indent}this.__tick(${lineNum}${currentParams}); ${trimmed}`;
+            return `${indent}this.__tick(${lineNum}${params}); ${trimmed}`;
         }
 
-        return `${line} this.__tick(${lineNum}${currentParams});`;
+        return `${line} this.__tick(${lineNum}${params});`;
     });
 
     return result.join("\n");
