@@ -2,12 +2,20 @@ import { Layout } from "webcola";
 import { GenericGraph } from "./graph";
 
 export interface LayoutOptions {
-    /** Logical canvas width; default 1000. vis-network re-fits to viewport. */
+    /** Logical canvas width; default 1400. vis-network re-fits to viewport. */
     width?: number;
-    /** Logical canvas height; default 1000. */
+    /** Logical canvas height; default 1400. */
     height?: number;
-    /** Preferred distance between linked nodes; default 180. */
+    /** Preferred distance between linked nodes; default 260. */
     linkDistance?: number;
+    /**
+     * Bounding-box size webcola should treat each node as occupying for
+     * overlap avoidance. Must be ≥ the rendered diameter — without this,
+     * webcola treats nodes as points and packs them until the rendered
+     * shapes collide. Default 180 matches our largest node (the 120px
+     * source diamond) plus generous breathing room.
+     */
+    nodeSize?: number;
     /**
      * Seed for the initial-position PRNG. webcola's solver is largely
      * deterministic given fixed inputs — varying the jitter seed is what
@@ -33,9 +41,10 @@ export function computeWebcolaLayout(
     graph: GenericGraph,
     opts: LayoutOptions = {},
 ): Map<string, { x: number; y: number }> {
-    const width = opts.width ?? 1000;
-    const height = opts.height ?? 1000;
-    const linkDistance = opts.linkDistance ?? 180;
+    const width = opts.width ?? 1400;
+    const height = opts.height ?? 1400;
+    const linkDistance = opts.linkDistance ?? 260;
+    const nodeSize = opts.nodeSize ?? 180;
     const iters = opts.iterations ?? [30, 20, 20];
 
     const allNodes = graph.getAllNodes();
@@ -45,10 +54,18 @@ export function computeWebcolaLayout(
         allNodes.map((n, i) => [n.id, i]),
     );
 
+    // Spread initial positions across the canvas rather than clustering
+    // around the centre — webcola's solver converges to cleaner layouts
+    // when the starting configuration already approximates a spread.
     const rand = mulberry32(opts.jitterSeed ?? 1);
     const nodes = allNodes.map(() => ({
-        x: width / 2 + (rand() - 0.5) * 200,
-        y: height / 2 + (rand() - 0.5) * 200,
+        x: rand() * width,
+        y: rand() * height,
+        // width/height are the overlap-avoidance footprint. Giving each
+        // node a size ≥ the rendered diameter prevents webcola from
+        // packing them until the canvas paints a crushed layout.
+        width: nodeSize,
+        height: nodeSize,
     }));
 
     const links = graph.getAllEdges()
