@@ -10,13 +10,14 @@ import { DijkstraStep } from "@/lib/dijkstra/dijkstraSolution";
 
 // ── vis.js options ────────────────────────────────────────────────────────────
 
-const FONT_COLOR = "#aaaadd";
+const FONT_COLOR = "#ffffff";
 const FONT_STROKE = "#000000";
+const FONT_ON_BRIGHT_FILL = "#0b0b0b";
 
 const BASE_FONT: Font = {
-    size: 13,
+    size: 16,
     color: FONT_COLOR,
-    strokeWidth: 2,
+    strokeWidth: 4,
     strokeColor: FONT_STROKE,
 };
 
@@ -92,8 +93,9 @@ function getNodeOptions(
         size: isSource ? 18 : 14,
         font: {
             ...BASE_FONT,
-            color: state === "settled" || isExtracting ? "#000000" : FONT_COLOR,
-            strokeColor: state === "settled" || isExtracting ? "#00000080" : FONT_STROKE,
+            color: state === "settled" || isExtracting ? FONT_ON_BRIGHT_FILL : FONT_COLOR,
+            strokeColor: state === "settled" || isExtracting ? "#ffffff80" : FONT_STROKE,
+            strokeWidth: state === "settled" || isExtracting ? 0 : BASE_FONT.strokeWidth,
         },
     };
 }
