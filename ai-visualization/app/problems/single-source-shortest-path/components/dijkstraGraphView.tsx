@@ -20,9 +20,17 @@ const BASE_FONT: Font = {
     strokeColor: FONT_STROKE,
 };
 
+const EDGE_LABEL_FONT: Font = {
+    size: 15,
+    color: "#ffffff",
+    strokeWidth: 0,
+    background: "#1f2937",
+    face: "ui-monospace, SFMono-Regular, Menlo, monospace",
+};
+
 const VIS_OPTIONS: VisGraphOptions = {
     edges: {
-        font: { ...BASE_FONT, size: 11 },
+        font: EDGE_LABEL_FONT,
         color: { color: "#666688", highlight: "#ffffff" },
         smooth: { enabled: true, type: "dynamic", roundness: 0.4 },
         arrows: { to: { enabled: true, scaleFactor: 0.6 } },
