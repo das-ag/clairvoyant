@@ -13,8 +13,8 @@ import { DijkstraStep } from "@/lib/dijkstra/dijkstraSolution";
 const NODE_FONT_COLOR = "#0b0b0b";
 const NODE_MIN_WIDTH = 54;
 const NODE_MIN_HEIGHT = 54;
-const SOURCE_MIN_WIDTH = 66;
-const SOURCE_MIN_HEIGHT = 66;
+const SOURCE_DIAMOND_WIDTH = 120;
+const SOURCE_DIAMOND_HEIGHT = 120;
 
 const BASE_FONT: Font = {
     size: 18,
@@ -103,18 +103,73 @@ function nodeLabel(node: GraphNode): string {
 
 const EXPLORING_BORDER = "#22d3ee"; // cyan-400 — distinct from source white and every fill
 
+/**
+ * Render the source vertex as a true diamond (rotated square) with the id,
+ * the fixed distance 0, and "(Start)" stacked inside. vis-network's built-in
+ * "diamond" shape positions the label outside the node, so we drop down to
+ * a custom ctxRenderer and own the canvas drawing.
+ */
+function makeSourceNode(
+    id: string,
+    fill: string,
+    strokeColor: string,
+): any {
+    const lines = [id, "0", "(Start)"];
+    const width = SOURCE_DIAMOND_WIDTH;
+    const height = SOURCE_DIAMOND_HEIGHT;
+    const face = (BASE_FONT as any).face ?? "sans-serif";
+    return {
+        id,
+        shape: "custom",
+        label: undefined,
+        ctxRenderer: ({ ctx, x, y }: { ctx: CanvasRenderingContext2D; x: number; y: number }) => ({
+            drawNode() {
+                const hw = width / 2;
+                const hh = height / 2;
+                ctx.save();
+                // Rhombus path
+                ctx.beginPath();
+                ctx.moveTo(x, y - hh);
+                ctx.lineTo(x + hw, y);
+                ctx.lineTo(x, y + hh);
+                ctx.lineTo(x - hw, y);
+                ctx.closePath();
+                ctx.fillStyle = fill;
+                ctx.fill();
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = strokeColor;
+                ctx.stroke();
+
+                // Three stacked label lines. Keep the id and 0 at the same
+                // size as non-source nodes; shrink "(Start)" so it fits the
+                // narrowing bottom half of the diamond.
+                ctx.fillStyle = NODE_FONT_COLOR;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                const lineH = 22;
+                const startY = y - lineH;
+                for (let i = 0; i < lines.length; i++) {
+                    ctx.font = i === 2
+                        ? `500 13px ${face}`
+                        : `600 18px ${face}`;
+                    ctx.fillText(lines[i], x, startY + i * lineH);
+                }
+                ctx.restore();
+            },
+            nodeDimensions: { width, height },
+        }),
+    };
+}
+
 function getNodeOptions(
     node: GraphNode,
-    isSource: boolean,
     isExtracting: boolean,
     isExploring: boolean,
 ): NodeOptions {
     const state: string = node.data["state"] ?? "";
     const bg = nodeColor(state, isExtracting);
-    // Border precedence: exploring > source > default. Exploring wins while
-    // the adjacency loop for this node is running so it's easy to spot.
-    const border = isExploring ? EXPLORING_BORDER : isSource ? "#ffffff" : "#0b1220";
-    const borderWidth = isExploring ? 5 : isSource ? 5 : 2;
+    const border = isExploring ? EXPLORING_BORDER : "#0b1220";
+    const borderWidth = isExploring ? 5 : 2;
     return {
         label: nodeLabel(node),
         color: {
@@ -124,9 +179,9 @@ function getNodeOptions(
         },
         borderWidth,
         shape: "circle",
-        widthConstraint: { minimum: isSource ? SOURCE_MIN_WIDTH : NODE_MIN_WIDTH },
+        widthConstraint: { minimum: NODE_MIN_WIDTH },
         heightConstraint: {
-            minimum: isSource ? SOURCE_MIN_HEIGHT : NODE_MIN_HEIGHT,
+            minimum: NODE_MIN_HEIGHT,
             valign: "middle",
         },
     } as NodeOptions;
@@ -181,9 +236,15 @@ export default function DijkstraGraphView({
             const isSource = node.id === sourceId;
             const isExtracting = node.id === extractingId;
             const isExploring = node.id === exploringId;
+            if (isSource) {
+                const state: string = node.data["state"] ?? "";
+                const fill = nodeColor(state, isExtracting);
+                const stroke = isExploring ? EXPLORING_BORDER : "#ffffff";
+                return makeSourceNode(node.id, fill, stroke);
+            }
             return {
                 id: node.id,
-                ...getNodeOptions(node, isSource, isExtracting, isExploring),
+                ...getNodeOptions(node, isExtracting, isExploring),
             };
         });
 
