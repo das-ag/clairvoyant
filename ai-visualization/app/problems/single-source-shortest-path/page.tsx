@@ -186,7 +186,6 @@ export default function SingleSourceShortestPathPage() {
         setCaseErrorMessage("");
         setAlgoErrorMessage("");
         toast.success(`Ready — ${newSteps.length} steps recorded`);
-        setPlaying(true);
     }
 
     runRef.current = runAlgo;
