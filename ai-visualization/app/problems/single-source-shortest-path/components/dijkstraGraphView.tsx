@@ -261,10 +261,20 @@ export default function DijkstraGraphView({
 
     useEffect(() => {
         rebuildVisData();
-        // Fit the precomputed layout into the viewport whenever node data
-        // rebuilds. Without physics there's no stabilization event to hook.
-        networkRef.current?.fit({ animation: false });
     }, [rebuildVisData, renderKey]);
+
+    // Fit the viewport whenever the layout itself changes (new graph or a
+    // fresh webcola seed) — deferred via rAF so vis-network has committed
+    // the updated node x/y before we ask it to scale them into view. A
+    // synchronous fit here races the data commit and leaves the graph
+    // off-screen.
+    useEffect(() => {
+        if (!networkRef.current) return;
+        const frame = requestAnimationFrame(() => {
+            networkRef.current?.fit({ animation: false });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [positions]);
 
     // Expose fit function through the ref
     useEffect(() => {
@@ -283,6 +293,11 @@ export default function DijkstraGraphView({
                 options={VIS_OPTIONS}
                 getNetwork={(network: vis.Network) => {
                     networkRef.current = network;
+                    // Fit once the very first paint lands — the effect
+                    // below handles subsequent layout changes.
+                    network.once("afterDrawing", () => {
+                        network.fit({ animation: false });
+                    });
                     if (onFitRef) {
                         onFitRef.current = () => {
                             network.fit({ animation: { duration: 300, easingFunction: "easeInOutQuad" } });
