@@ -88,23 +88,28 @@ function nodeLabel(node: GraphNode): string {
     return distLabel !== undefined ? `${node.id}\n${distLabel}` : node.id;
 }
 
+const EXPLORING_BORDER = "#22d3ee"; // cyan-400 — distinct from source white and every fill
+
 function getNodeOptions(
     node: GraphNode,
     isSource: boolean,
     isExtracting: boolean,
+    isExploring: boolean,
 ): NodeOptions {
     const state: string = node.data["state"] ?? "";
     const bg = nodeColor(state, isExtracting);
+    // Border precedence: exploring > source > default. Exploring wins while
+    // the adjacency loop for this node is running so it's easy to spot.
+    const border = isExploring ? EXPLORING_BORDER : isSource ? "#ffffff" : "#0b1220";
+    const borderWidth = isExploring ? 5 : isSource ? 5 : 2;
     return {
         label: nodeLabel(node),
         color: {
             background: bg,
-            // Source is marked with a thick white ring; others carry a dark ring
-            // so the colored fills stand off the navy canvas cleanly.
-            border: isSource ? "#ffffff" : "#0b1220",
-            highlight: { background: bg, border: "#ffffff" },
+            border,
+            highlight: { background: bg, border: isExploring ? EXPLORING_BORDER : "#ffffff" },
         },
-        borderWidth: isSource ? 5 : 2,
+        borderWidth,
         shape: "circle",
         widthConstraint: { minimum: isSource ? SOURCE_MIN_WIDTH : NODE_MIN_WIDTH },
         heightConstraint: {
@@ -121,9 +126,14 @@ function getEdgeOptions(
     const minW = 1.5, maxW = 10;
     const width = Math.min(maxW, minW + Math.max(0, Math.log2(Math.abs(edge.weight) + 1)));
     return {
-        color: isRelaxing ? "#D55E00" : undefined, // vermilion when relaxing; matches "extracting"
-        width: isRelaxing ? width + 1.5 : width,
+        color: isRelaxing
+            ? { color: "#D55E00", highlight: "#D55E00" }
+            : undefined,
+        width: isRelaxing ? Math.max(width + 3, 5) : width,
         label: String(edge.weight),
+        font: isRelaxing
+            ? { ...EDGE_LABEL_FONT, background: "#D55E00" }
+            : EDGE_LABEL_FONT,
         arrows: edge.isBidirectional ? "" : "to",
     };
 }
@@ -151,14 +161,16 @@ export default function DijkstraGraphView({
 
         const sourceId = graph.startNode?.id;
         const extractingId = currentStep?.extractingNodeId;
+        const exploringId = currentStep?.exploringNodeId;
         const relaxingEdge = currentStep?.relaxingEdge;
 
         const nodes = graph.getAllNodes().map((node) => {
             const isSource = node.id === sourceId;
             const isExtracting = node.id === extractingId;
+            const isExploring = node.id === exploringId;
             return {
                 id: node.id,
-                ...getNodeOptions(node, isSource, isExtracting),
+                ...getNodeOptions(node, isSource, isExtracting, isExploring),
             };
         });
 

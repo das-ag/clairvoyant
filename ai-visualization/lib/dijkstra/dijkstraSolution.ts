@@ -61,8 +61,9 @@ export class DijkstraStep {
     question?: string;
     answer?: string;
     /**
-     * If this step is a relaxEdge call, the IDs of the edge being checked.
-     * Used by DijkstraGraphView for transient highlight (not in graph state).
+     * The edge being checked / relaxed this step (and across the rest of the
+     * containing relax() call). Used by DijkstraGraphView for transient
+     * highlight — does not persist as durable graph state.
      */
     relaxingEdge?: { fromId: string; toId: string };
     /**
@@ -70,6 +71,13 @@ export class DijkstraStep {
      * Used by DijkstraGraphView for transient highlight.
      */
     extractingNodeId?: string;
+    /**
+     * The ID of the node whose adjacent edges are currently being explored
+     * (the `u` in the inner `for (let edge of adj(u))` loop). Used by
+     * DijkstraGraphView to draw a distinct border ring while exploration
+     * is in progress.
+     */
+    exploringNodeId?: string;
 
     constructor(
         debugValue: any = null,
@@ -135,6 +143,20 @@ export class DijkstraSolutionBase {
     private _lastBranchLine: number | null = null;
     private _methodParams: Record<string, any> = {};
 
+    /**
+     * ID of the vertex whose adjacency is currently being iterated. Set in
+     * settle() (when u transitions from extracting to exploring), cleared at
+     * the start of the next extractMin.
+     */
+    private _exploringNodeId?: string;
+    /**
+     * Edge currently in the middle of a relax() call — set by relaxEdge()
+     * and inherited by the branch-question and updateDist steps that follow
+     * within the same iteration, so the highlight persists through the
+     * whole relax.
+     */
+    private _activeEdge?: { fromId: string; toId: string };
+
     /** Internal distance map — mirrors d[] in CLRS. */
     private _distMap: Map<string, number> = new Map();
     /** Internal predecessor map — mirrors π[] in CLRS. */
@@ -187,6 +209,17 @@ export class DijkstraSolutionBase {
         return entries;
     }
 
+    /** Attach the solver's transient highlight state to a step. */
+    private _attachActive(step: DijkstraStep): DijkstraStep {
+        if (this._exploringNodeId && !step.exploringNodeId) {
+            step.exploringNodeId = this._exploringNodeId;
+        }
+        if (this._activeEdge && !step.relaxingEdge) {
+            step.relaxingEdge = this._activeEdge;
+        }
+        return step;
+    }
+
     private _vertexSnapshot(extractingId?: string): VertexSnapshot {
         const snap: VertexSnapshot = {};
         for (const node of this.graph.getAllNodes()) {
@@ -230,18 +263,16 @@ export class DijkstraSolutionBase {
         if (ann.question || ann.answer) {
             const q = ann.question ? evaluateTemplate(ann.question, ctx) : undefined;
             const a = ann.answer ? evaluateTemplate(ann.answer, ctx) : undefined;
-            this.__steps.push(
-                new DijkstraStep(undefined, undefined, false, branchLine,
-                    this._pointerSnapshot(), this._queueSnapshot(),
-                    this._vertexSnapshot(), q, a),
-            );
+            const step = new DijkstraStep(undefined, undefined, false, branchLine,
+                this._pointerSnapshot(), this._queueSnapshot(),
+                this._vertexSnapshot(), q, a);
+            this.__steps.push(this._attachActive(step));
         } else if (ann.msg) {
             const msg = evaluateTemplate(ann.msg, ctx);
-            this.__steps.push(
-                new DijkstraStep(msg, undefined, false, branchLine,
-                    this._pointerSnapshot(), this._queueSnapshot(),
-                    this._vertexSnapshot()),
-            );
+            const step = new DijkstraStep(msg, undefined, false, branchLine,
+                this._pointerSnapshot(), this._queueSnapshot(),
+                this._vertexSnapshot());
+            this.__steps.push(this._attachActive(step));
         }
     }
 
@@ -275,6 +306,7 @@ export class DijkstraSolutionBase {
             this._queueSnapshot(extractingId),
             this._vertexSnapshot(extractingId),
         );
+        this._attachActive(step);
         this.__steps.push(step);
         return step;
     }
@@ -287,11 +319,10 @@ export class DijkstraSolutionBase {
         const ann = this._annotations.get(line);
         if (!ann) return;
         const msg = this._resolveMsg(line, "", extras);
-        this.__steps.push(
-            new DijkstraStep(msg, undefined, false, line,
-                this._pointerSnapshot(), this._queueSnapshot(),
-                this._vertexSnapshot()),
-        );
+        const step = new DijkstraStep(msg, undefined, false, line,
+            this._pointerSnapshot(), this._queueSnapshot(),
+            this._vertexSnapshot());
+        this.__steps.push(this._attachActive(step));
     }
 
     // ── Visualization methods (called from user pseudocode) ──────────────────
@@ -342,12 +373,15 @@ export class DijkstraSolutionBase {
      */
     relaxEdge(u: GraphNode, v: GraphNode, w: number): void {
         const line = getEvalCallerLine();
+        // Set before _pushStep so the step itself — and every subsequent step
+        // emitted inside the same relax() call — carries the edge highlight.
+        this._activeEdge = { fromId: u.id, toId: v.id };
         const step = this._pushStep(
             `Checking edge (${u.id} → ${v.id}), weight = ${w}`,
             undefined, false, line,
             { u, v, w },
         );
-        step.relaxingEdge = { fromId: u.id, toId: v.id };
+        step.relaxingEdge = this._activeEdge;
     }
 
     /**
@@ -356,6 +390,11 @@ export class DijkstraSolutionBase {
      */
     extractMin(Q: GraphNode[]): GraphNode {
         const line = getEvalCallerLine();
+        // Entering a new main-loop iteration — the previous iteration's
+        // exploring node and relax edge are no longer active.
+        this._exploringNodeId = undefined;
+        this._activeEdge = undefined;
+
         let minIdx = 0;
         let minDist = this._distMap.get(Q[0].id) ?? Infinity;
         for (let i = 1; i < Q.length; i++) {
@@ -394,6 +433,10 @@ export class DijkstraSolutionBase {
         ]);
         cmd.execute();
 
+        // From this point onward we're exploring u's adjacent edges. Mark it
+        // so DijkstraGraphView can draw a distinct border while the inner
+        // for-loop runs. Cleared at the next extractMin.
+        this._exploringNodeId = u.id;
         this._pushStep(`Add ${u.id} to settled set S`, cmd, false, line, { u });
     }
 
@@ -402,23 +445,24 @@ export class DijkstraSolutionBase {
         const line = getEvalCallerLine();
         this._emitBranchIfNeeded(line);
         const msg = this._resolveMsg(line, "", ctx);
-        this.__steps.push(
-            new DijkstraStep(msg, undefined, false, line,
-                this._pointerSnapshot(), this._queueSnapshot(),
-                this._vertexSnapshot()),
-        );
+        const step = new DijkstraStep(msg, undefined, false, line,
+            this._pointerSnapshot(), this._queueSnapshot(),
+            this._vertexSnapshot());
+        this.__steps.push(this._attachActive(step));
     }
 
     /** Emit a terminal step — algorithm is finished. */
     done(ctx?: Record<string, any>): void {
         const line = getEvalCallerLine();
+        // All highlights drop as soon as the algorithm completes.
+        this._exploringNodeId = undefined;
+        this._activeEdge = undefined;
         this._emitBranchIfNeeded(line);
         const msg = this._resolveMsg(line, "Dijkstra complete", ctx);
-        this.__steps.push(
-            new DijkstraStep(msg, undefined, true, line,
-                this._pointerSnapshot(), this._queueSnapshot(),
-                this._vertexSnapshot()),
-        );
+        const step = new DijkstraStep(msg, undefined, true, line,
+            this._pointerSnapshot(), this._queueSnapshot(),
+            this._vertexSnapshot());
+        this.__steps.push(step);
     }
 
     // ── Step retrieval ────────────────────────────────────────────────────────
@@ -429,6 +473,8 @@ export class DijkstraSolutionBase {
         this._distMap = new Map();
         this._prevMap = new Map();
         this._queuedSet = new Set();
+        this._exploringNodeId = undefined;
+        this._activeEdge = undefined;
         (this as any).solve(source);
         return this._finalizeSteps();
     }
