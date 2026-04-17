@@ -5,7 +5,7 @@ import Header from "@/app/components/header";
 import SolutionEditor from "@/app/components/editors/solutionEditor";
 import CaseEditor from "@/app/components/editors/problemEditor";
 import DebugStepper from "@/app/components/controls/debugStepper";
-import WatchPanel, { WatchEntry } from "@/app/components/controls/watchPanel";
+import VertexPanel from "@/app/components/controls/vertexPanel";
 import PriorityQueuePanel from "@/app/components/controls/priorityQueuePanel";
 import DijkstraGraphView from "./components/dijkstraGraphView";
 import { HDivider, VDivider } from "@/app/components/divider";
@@ -17,6 +17,7 @@ import {
     DijkstraSolutionBase,
     buildDijkstraSolution,
     QueueEntry,
+    VertexSnapshot,
 } from "@/lib/dijkstra/dijkstraSolution";
 import {
     AnnotationEntry,
@@ -121,17 +122,9 @@ export default function SingleSourceShortestPathPage() {
     const question = currentStep?.question;
     const answer = currentStep?.answer;
 
-    const watchEntries: WatchEntry[] = useMemo(() => {
-        if (stepIndex <= 0 || steps.length === 0) return [];
-        const snap = steps[stepIndex - 1]?.pointerSnapshot ?? {};
-        return Object.entries(snap).map(([key, value]) => {
-            const isDist = key.startsWith("dist[");
-            return {
-                key,
-                value,
-                color: isDist ? "#60a5fa" : undefined,
-            };
-        });
+    const vertexSnapshot: VertexSnapshot = useMemo(() => {
+        if (stepIndex <= 0 || steps.length === 0) return {};
+        return steps[stepIndex - 1]?.vertexSnapshot ?? {};
     }, [stepIndex, steps]);
 
     const queueEntries: QueueEntry[] = useMemo(() => {
@@ -337,10 +330,10 @@ export default function SingleSourceShortestPathPage() {
                                 <span>Allow negative weights <span className="text-amber-400">(observe incorrect behavior)</span></span>
                             </label>
 
-                            {/* Watch + Stepper */}
+                            {/* Vertex list + Stepper */}
                             <div className="flex flex-row gap-2 items-start flex-wrap xl:flex-nowrap">
-                                <div className="w-48 shrink-0">
-                                    <WatchPanel entries={watchEntries} />
+                                <div className="w-56 shrink-0">
+                                    <VertexPanel snapshot={vertexSnapshot} />
                                 </div>
                                 <div className="flex-grow min-w-0">
                                     <DebugStepper

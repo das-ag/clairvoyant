@@ -17,6 +17,24 @@ export interface QueueEntry {
     isBeingExtracted: boolean;
 }
 
+// ── Vertex snapshot (for VertexPanel) ───────────────────────────────────────
+
+export type VertexState = "unvisited" | "relaxed" | "settled" | "extracting";
+
+export interface VertexSnapshotEntry {
+    id: string;
+    /** String representation of d[v] — "∞" when unset. */
+    dist: string;
+    /** Raw distance, for sorting / numeric display. */
+    distValue: number;
+    /** Predecessor node id, or "NIL". */
+    prev: string;
+    state: VertexState;
+    inQueue: boolean;
+}
+
+export type VertexSnapshot = Record<string, VertexSnapshotEntry>;
+
 // ── Step command ──────────────────────────────────────────────────────────────
 // A simple reversible operation that closes over the nodes it mutates.
 // Using a plain interface rather than the generic Command<T> avoids the need
@@ -34,10 +52,12 @@ export class DijkstraStep {
     command?: StepCommand;
     sourceLine: number | null;
     isTerminal: boolean;
-    /** Snapshot of dist[] / prev[] values for the WatchPanel. */
+    /** Flat snapshot of dist[] / prev[] values — retained for annotation contexts and diagnostics. */
     pointerSnapshot: Record<string, string>;
     /** Current priority-queue state for PriorityQueuePanel. */
     queueSnapshot: QueueEntry[];
+    /** Full per-vertex state snapshot for VertexPanel. */
+    vertexSnapshot: VertexSnapshot;
     question?: string;
     answer?: string;
     /**
@@ -58,6 +78,7 @@ export class DijkstraStep {
         sourceLine: number | null = null,
         pointerSnapshot: Record<string, string> = {},
         queueSnapshot: QueueEntry[] = [],
+        vertexSnapshot: VertexSnapshot = {},
         question?: string,
         answer?: string,
     ) {
@@ -67,6 +88,7 @@ export class DijkstraStep {
         this.sourceLine = sourceLine;
         this.pointerSnapshot = pointerSnapshot;
         this.queueSnapshot = queueSnapshot;
+        this.vertexSnapshot = vertexSnapshot;
         this.question = question;
         this.answer = answer;
     }
@@ -165,6 +187,34 @@ export class DijkstraSolutionBase {
         return entries;
     }
 
+    private _vertexSnapshot(extractingId?: string): VertexSnapshot {
+        const snap: VertexSnapshot = {};
+        for (const node of this.graph.getAllNodes()) {
+            const id = node.id;
+            const distValue = this._distMap.get(id) ?? Infinity;
+            const rawState = node.data["state"] as string | undefined;
+            let state: VertexState;
+            if (id === extractingId) {
+                state = "extracting";
+            } else if (rawState === "settled") {
+                state = "settled";
+            } else if (rawState === "relaxed") {
+                state = "relaxed";
+            } else {
+                state = "unvisited";
+            }
+            snap[id] = {
+                id,
+                dist: distValue === Infinity ? "∞" : String(distValue),
+                distValue,
+                prev: this._prevMap.get(id) ?? "NIL",
+                state,
+                inQueue: this._queuedSet.has(id),
+            };
+        }
+        return snap;
+    }
+
     // ── Core step emission ────────────────────────────────────────────────────
 
     private _emitBranchIfNeeded(line: number | null): void {
@@ -182,13 +232,15 @@ export class DijkstraSolutionBase {
             const a = ann.answer ? evaluateTemplate(ann.answer, ctx) : undefined;
             this.__steps.push(
                 new DijkstraStep(undefined, undefined, false, branchLine,
-                    this._pointerSnapshot(), this._queueSnapshot(), q, a),
+                    this._pointerSnapshot(), this._queueSnapshot(),
+                    this._vertexSnapshot(), q, a),
             );
         } else if (ann.msg) {
             const msg = evaluateTemplate(ann.msg, ctx);
             this.__steps.push(
                 new DijkstraStep(msg, undefined, false, branchLine,
-                    this._pointerSnapshot(), this._queueSnapshot()),
+                    this._pointerSnapshot(), this._queueSnapshot(),
+                    this._vertexSnapshot()),
             );
         }
     }
@@ -221,6 +273,7 @@ export class DijkstraSolutionBase {
             msg, cmd, terminal, line,
             this._pointerSnapshot(),
             this._queueSnapshot(extractingId),
+            this._vertexSnapshot(extractingId),
         );
         this.__steps.push(step);
         return step;
@@ -236,7 +289,8 @@ export class DijkstraSolutionBase {
         const msg = this._resolveMsg(line, "", extras);
         this.__steps.push(
             new DijkstraStep(msg, undefined, false, line,
-                this._pointerSnapshot(), this._queueSnapshot()),
+                this._pointerSnapshot(), this._queueSnapshot(),
+                this._vertexSnapshot()),
         );
     }
 
@@ -319,6 +373,7 @@ export class DijkstraSolutionBase {
             msg, undefined, false, line,
             this._pointerSnapshot(),
             this._queueSnapshot(u.id),
+            this._vertexSnapshot(u.id),
         );
         step.extractingNodeId = u.id;
         this.__steps.push(step);
@@ -349,7 +404,8 @@ export class DijkstraSolutionBase {
         const msg = this._resolveMsg(line, "", ctx);
         this.__steps.push(
             new DijkstraStep(msg, undefined, false, line,
-                this._pointerSnapshot(), this._queueSnapshot()),
+                this._pointerSnapshot(), this._queueSnapshot(),
+                this._vertexSnapshot()),
         );
     }
 
@@ -360,7 +416,8 @@ export class DijkstraSolutionBase {
         const msg = this._resolveMsg(line, "Dijkstra complete", ctx);
         this.__steps.push(
             new DijkstraStep(msg, undefined, true, line,
-                this._pointerSnapshot(), this._queueSnapshot()),
+                this._pointerSnapshot(), this._queueSnapshot(),
+                this._vertexSnapshot()),
         );
     }
 
