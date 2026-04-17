@@ -39,14 +39,20 @@ const VIS_OPTIONS: VisGraphOptions = {
     nodes: {
         font: BASE_FONT,
         shape: "dot",
-        size: 14,
+        size: 20,
     },
     physics: {
         barnesHut: {
             gravitationalConstant: -2000,
             springConstant: 0.006,
-            springLength: 80,
+            springLength: 160,
             centralGravity: 0.4,
+            avoidOverlap: 0.8,
+        },
+        stabilization: {
+            enabled: true,
+            iterations: 400,
+            fit: true,
         },
     },
     height: "100%",
@@ -93,7 +99,7 @@ function getNodeOptions(
         },
         borderWidth: isSource ? 3 : 1,
         shape: isSource ? "diamond" : "dot",
-        size: isSource ? 18 : 14,
+        size: isSource ? 26 : 20,
         font: {
             ...BASE_FONT,
             // Dark text for the brightest fills (relaxed yellow, settled teal),
@@ -189,6 +195,9 @@ export default function DijkstraGraphView({
                 options={VIS_OPTIONS}
                 getNetwork={(network: vis.Network) => {
                     networkRef.current = network;
+                    network.once("stabilizationIterationsDone", () => {
+                        network.fit({ animation: false });
+                    });
                     if (onFitRef) {
                         onFitRef.current = () => {
                             network.fit({ animation: { duration: 300, easingFunction: "easeInOutQuad" } });
