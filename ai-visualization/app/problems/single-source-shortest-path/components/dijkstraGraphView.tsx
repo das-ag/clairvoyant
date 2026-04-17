@@ -10,19 +10,21 @@ import { DijkstraStep } from "@/lib/dijkstra/dijkstraSolution";
 
 // ── vis.js options ────────────────────────────────────────────────────────────
 
-const FONT_COLOR = "#ffffff";
-const FONT_STROKE = "#000000";
-const FONT_ON_BRIGHT_FILL = "#0b0b0b";
+const NODE_FONT_COLOR = "#0b0b0b";
+const NODE_MIN_WIDTH = 54;
+const NODE_MIN_HEIGHT = 54;
+const SOURCE_MIN_WIDTH = 66;
+const SOURCE_MIN_HEIGHT = 66;
 
 const BASE_FONT: Font = {
-    size: 16,
-    color: FONT_COLOR,
-    strokeWidth: 4,
-    strokeColor: FONT_STROKE,
+    size: 18,
+    color: NODE_FONT_COLOR,
+    strokeWidth: 0,
+    face: "ui-sans-serif, system-ui, -apple-system, sans-serif",
 };
 
 const EDGE_LABEL_FONT: Font = {
-    size: 15,
+    size: 18,
     color: "#ffffff",
     strokeWidth: 0,
     background: "#1f2937",
@@ -38,9 +40,12 @@ const VIS_OPTIONS: VisGraphOptions = {
     },
     nodes: {
         font: BASE_FONT,
-        shape: "dot",
-        size: 20,
-    },
+        shape: "circle",
+        widthConstraint: { minimum: NODE_MIN_WIDTH },
+        // heightConstraint is supported by vis-network but missing from its typings.
+        heightConstraint: { minimum: NODE_MIN_HEIGHT, valign: "middle" },
+        margin: { top: 8, right: 12, bottom: 8, left: 12 },
+    } as any,
     physics: {
         barnesHut: {
             gravitationalConstant: -2000,
@@ -68,7 +73,7 @@ const VIS_OPTIONS: VisGraphOptions = {
 
 // Palette picked from Wong's 8-class colorblind-safe set so that the four
 // node states remain pairwise distinguishable under deuteranopia/protanopia
-// and so none of them collide with the source node's white-bordered diamond.
+// and so none of them collide with the source's thick white border ring.
 function nodeColor(state: string | undefined, isExtracting: boolean): string {
     if (isExtracting) return "#D55E00"; // vermilion — being extracted
     switch (state) {
@@ -94,21 +99,19 @@ function getNodeOptions(
         label: nodeLabel(node),
         color: {
             background: bg,
-            border: isSource ? "#ffffff" : bg,
+            // Source is marked with a thick white ring; others carry a dark ring
+            // so the colored fills stand off the navy canvas cleanly.
+            border: isSource ? "#ffffff" : "#0b1220",
             highlight: { background: bg, border: "#ffffff" },
         },
-        borderWidth: isSource ? 3 : 1,
-        shape: isSource ? "diamond" : "dot",
-        size: isSource ? 26 : 20,
-        font: {
-            ...BASE_FONT,
-            // Dark text for the brightest fills (relaxed yellow, settled teal),
-            // white with a halo for the darker fills (unvisited blue, extracting vermilion).
-            color: state === "settled" || state === "relaxed" ? FONT_ON_BRIGHT_FILL : FONT_COLOR,
-            strokeColor: state === "settled" || state === "relaxed" ? "#ffffff80" : FONT_STROKE,
-            strokeWidth: state === "settled" || state === "relaxed" ? 0 : BASE_FONT.strokeWidth,
+        borderWidth: isSource ? 5 : 2,
+        shape: "circle",
+        widthConstraint: { minimum: isSource ? SOURCE_MIN_WIDTH : NODE_MIN_WIDTH },
+        heightConstraint: {
+            minimum: isSource ? SOURCE_MIN_HEIGHT : NODE_MIN_HEIGHT,
+            valign: "middle",
         },
-    };
+    } as NodeOptions;
 }
 
 function getEdgeOptions(
