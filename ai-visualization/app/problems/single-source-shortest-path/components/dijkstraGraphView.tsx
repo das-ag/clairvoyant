@@ -24,7 +24,7 @@ const BASE_FONT: Font = {
 };
 
 const EDGE_LABEL_FONT: Font = {
-    size: 18,
+    size: 22,
     color: "#ffffff",
     strokeWidth: 0,
     background: "#1f2937",
