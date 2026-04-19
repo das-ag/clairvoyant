@@ -2,6 +2,7 @@
 
 import Header from "@/app/components/header";
 import EditorTabs from "@/app/components/editors/editorTabs";
+import OptionsPanel, { OptionsSection, OptionRow } from "@/app/components/editors/optionsPanel";
 import DebugStepper from "@/app/components/controls/debugStepper";
 import WatchPanel, { WatchEntry } from "@/app/components/controls/watchPanel";
 import RBTView from "./components/rbtView";
@@ -324,6 +325,20 @@ export default function RedBlackTreePage() {
                         caseData={caseData}
                         onCaseDataChanged={onCaseDataChanged}
                         caseErrorMessage={caseErrorMessage}
+                        options={
+                            <OptionsPanel>
+                                <OptionsSection title="Visual">
+                                    <OptionRow label="Fit view" title="Center and fit the tree to the viewport">
+                                        <button
+                                            onClick={() => fitRef.current?.()}
+                                            className={`${buttonStyleClassNames} px-3 py-1 rounded border border-secondary-200 dark:border-secondary-800 text-sm`}
+                                        >
+                                            Fit
+                                        </button>
+                                    </OptionRow>
+                                </OptionsSection>
+                            </OptionsPanel>
+                        }
                     />
                 </div>
                 <VDivider onWidthChangeRequest={(v) => setLeftWidth(leftWidth + v)} />
@@ -350,12 +365,6 @@ export default function RedBlackTreePage() {
                                 <span>{playing ? "Pause" : "Play"} animation</span>
                             </button>
                         )}
-                        <button
-                            onClick={() => fitRef.current?.()}
-                            className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
-                        >
-                            Fit
-                        </button>
                     </div>
 
                     {/* Top-center: Annotation */}
