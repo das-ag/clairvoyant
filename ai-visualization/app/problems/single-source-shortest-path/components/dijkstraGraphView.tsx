@@ -374,17 +374,31 @@ export default function DijkstraGraphView({
         const net = networkRef.current;
         const vp = viewportRef.current;
         if (!net || !vp) return;
-        const positionsById = net.getPositions();
-        const ids = Object.keys(positionsById);
-        if (ids.length === 0) return;
-
+        // Prefer the React-owned layout positions over net.getPositions() —
+        // when switching cases, vis-network can still hold stale positions
+        // from the previous graph for a frame, which shifts the fit bbox
+        // off-screen.
+        const layoutIds = Array.from(positions.keys());
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const id of ids) {
-            const p = positionsById[id];
-            if (p.x < minX) minX = p.x;
-            if (p.x > maxX) maxX = p.x;
-            if (p.y < minY) minY = p.y;
-            if (p.y > maxY) maxY = p.y;
+        if (layoutIds.length > 0) {
+            for (const id of layoutIds) {
+                const p = positions.get(id)!;
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+            }
+        } else {
+            const positionsById = net.getPositions();
+            const ids = Object.keys(positionsById);
+            if (ids.length === 0) return;
+            for (const id of ids) {
+                const p = positionsById[id];
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+            }
         }
         const bboxW = Math.max(1, maxX - minX);
         const bboxH = Math.max(1, maxY - minY);
@@ -422,7 +436,7 @@ export default function DijkstraGraphView({
             offset: { x: offsetX, y: offsetY },
             animation: animate ? { duration: 300, easingFunction: "easeInOutQuad" } : false,
         } as any);
-    }, []);
+    }, [positions]);
 
     // Re-fit whenever the layout itself changes (new graph or fresh webcola
     // seed). One-shot afterDrawing guarantees we read the committed node
