@@ -253,6 +253,20 @@ interface DijkstraGraphViewProps {
     selectedNodeId?: string | null;
     /** Emit the new selection; null clears. Toggling is the parent's job. */
     onSelectedNodeChange?: (id: string | null) => void;
+    /**
+     * Transient hover from any linked panel. Drives the edge-direction glow
+     * (hover overrides selection for glow, but selection still owns the
+     * pink node border).
+     */
+    hoveredNodeId?: string | null;
+    onHoveredNodeChange?: (id: string | null) => void;
+    /**
+     * Pixel insets that fit() should treat as reserved (e.g. floating UI
+     * panels sitting on top of the canvas). The canvas itself still fills
+     * the full container so nodes can be drawn everywhere — only the
+     * initial centering/zoom avoids these regions.
+     */
+    fitInsets?: { top?: number; right?: number; bottom?: number; left?: number };
 }
 
 export default function DijkstraGraphView({
@@ -266,16 +280,29 @@ export default function DijkstraGraphView({
     layoutSpacing = 1,
     selectedNodeId = null,
     onSelectedNodeChange,
+    hoveredNodeId = null,
+    onHoveredNodeChange,
+    fitInsets,
 }: DijkstraGraphViewProps) {
     const [visData, setVisData] = useState<GraphData>({ nodes: [], edges: [] });
     const [positions, setPositions] = useState<LayoutPositions>(new Map());
     const networkRef = useRef<vis.Network | null>(null);
+    const viewportRef = useRef<HTMLDivElement | null>(null);
+    const fitInsetsRef = useRef(fitInsets);
+    fitInsetsRef.current = fitInsets;
     // getNetwork() fires once; refs keep the click handler reading the
     // latest selectedNodeId / change callback without re-subscribing.
     const selectedNodeIdRef = useRef<string | null>(selectedNodeId);
     selectedNodeIdRef.current = selectedNodeId;
     const onSelectedNodeChangeRef = useRef(onSelectedNodeChange);
     onSelectedNodeChangeRef.current = onSelectedNodeChange;
+    const onHoveredNodeChangeRef = useRef(onHoveredNodeChange);
+    onHoveredNodeChangeRef.current = onHoveredNodeChange;
+
+    // Hover wins over selection for the directional edge glow — when the
+    // user hovers another node we want to preview its neighbors without
+    // forgetting the committed selection's pink border.
+    const glowSourceId = hoveredNodeId ?? selectedNodeId;
 
     const visOptions = useMemo(() => buildVisOptions(physicsEnabled), [physicsEnabled]);
 
@@ -328,41 +355,95 @@ export default function DijkstraGraphView({
                 id: edge.id,
                 from: edge.source.id,
                 to: edge.target.id,
-                ...getEdgeOptions(edge, isRelaxing, selectedNodeId),
+                ...getEdgeOptions(edge, isRelaxing, glowSourceId),
             };
         });
 
         setVisData({ nodes, edges });
-    }, [graph, currentStep, positions, selectedNodeId]);
+    }, [graph, currentStep, positions, selectedNodeId, glowSourceId]);
 
     useEffect(() => {
         rebuildVisData();
     }, [rebuildVisData, renderKey]);
 
-    // Fit the viewport whenever the layout itself changes (new graph or a
-    // fresh webcola seed). Using a one-shot "afterDrawing" listener
-    // guarantees fit runs only after vis-network has drawn the new node
-    // coordinates — a rAF callback races the data commit and fits the old
-    // positions, leaving the graph off-screen.
+    // Fit that respects the inset regions reserved for floating UI (right
+    // rail, bottom-left stepper). The canvas itself fills the container so
+    // drags/hovers work anywhere; we just shift the camera + shrink the
+    // scale so default centering lands in the visible "clear" rectangle.
+    const fitWithInsets = useCallback((animate: boolean) => {
+        const net = networkRef.current;
+        const vp = viewportRef.current;
+        if (!net || !vp) return;
+        const positionsById = net.getPositions();
+        const ids = Object.keys(positionsById);
+        if (ids.length === 0) return;
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const id of ids) {
+            const p = positionsById[id];
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        }
+        const bboxW = Math.max(1, maxX - minX);
+        const bboxH = Math.max(1, maxY - minY);
+        const bboxCx = (minX + maxX) / 2;
+        const bboxCy = (minY + maxY) / 2;
+
+        const insets = fitInsetsRef.current ?? {};
+        const top = insets.top ?? 0, right = insets.right ?? 0;
+        const bottom = insets.bottom ?? 0, left = insets.left ?? 0;
+
+        const canvasW = vp.clientWidth;
+        const canvasH = vp.clientHeight;
+        const clearW = Math.max(50, canvasW - left - right);
+        const clearH = Math.max(50, canvasH - top - bottom);
+
+        // Only consume 80% of the clear region so nodes (up to 120 px for
+        // the source diamond) have breathing room on every side, and cap
+        // the zoom at 1× so tiny graphs don't balloon to fill the viewport.
+        const USABLE = 0.8;
+        const rawScale = Math.min(
+            (clearW * USABLE) / bboxW,
+            (clearH * USABLE) / bboxH,
+        );
+        const scale = Math.min(1, rawScale);
+
+        // Offset in DOM pixels from the canvas center to the clear-region
+        // center. vis-network applies this after scaling, so the bbox center
+        // lands at the center of the clear rectangle.
+        const offsetX = (left - right) / 2;
+        const offsetY = (top - bottom) / 2;
+
+        net.moveTo({
+            position: { x: bboxCx, y: bboxCy },
+            scale: Math.max(0.05, scale),
+            offset: { x: offsetX, y: offsetY },
+            animation: animate ? { duration: 300, easingFunction: "easeInOutQuad" } : false,
+        } as any);
+    }, []);
+
+    // Re-fit whenever the layout itself changes (new graph or fresh webcola
+    // seed). One-shot afterDrawing guarantees we read the committed node
+    // coordinates, not the previous frame's.
     useEffect(() => {
         const net = networkRef.current;
         if (!net) return;
-        const onFit = () => net.fit({ animation: { duration: 300, easingFunction: "easeInOutQuad" } });
+        const onFit = () => fitWithInsets(true);
         net.once("afterDrawing", onFit);
         return () => { net.off("afterDrawing", onFit); };
-    }, [positions]);
+    }, [positions, fitWithInsets]);
 
     // Expose fit function through the ref
     useEffect(() => {
         if (onFitRef) {
-            onFitRef.current = () => {
-                networkRef.current?.fit({ animation: { duration: 300, easingFunction: "easeInOutQuad" } });
-            };
+            onFitRef.current = () => fitWithInsets(true);
         }
-    }, [onFitRef]);
+    }, [onFitRef, fitWithInsets]);
 
     return (
-        <div className="w-full h-full">
+        <div ref={viewportRef} className="w-full h-full">
             <VisGraph
                 style={{ height: "100%", width: "100%" }}
                 graph={visData}
@@ -372,13 +453,8 @@ export default function DijkstraGraphView({
                     // Fit once the very first paint lands — the effect
                     // below handles subsequent layout changes.
                     network.once("afterDrawing", () => {
-                        network.fit({ animation: false });
+                        fitWithInsets(false);
                     });
-                    if (onFitRef) {
-                        onFitRef.current = () => {
-                            network.fit({ animation: { duration: 300, easingFunction: "easeInOutQuad" } });
-                        };
-                    }
                     // Toggle direction-aware glow on click; clicking the
                     // already-selected node (or empty canvas) clears it.
                     // Parent owns the state so the PQ and Vertex panels
@@ -388,6 +464,14 @@ export default function DijkstraGraphView({
                         const prev = selectedNodeIdRef.current;
                         onSelectedNodeChangeRef.current?.(clicked && clicked !== prev ? clicked : null);
                         network.unselectAll();
+                    });
+                    // Preview edge direction on hover. Mirrors the same
+                    // shared hover channel the PQ and Vertex panels emit.
+                    network.on("hoverNode", (params: { node: string }) => {
+                        onHoveredNodeChangeRef.current?.(params.node);
+                    });
+                    network.on("blurNode", () => {
+                        onHoveredNodeChangeRef.current?.(null);
                     });
                 }}
             />

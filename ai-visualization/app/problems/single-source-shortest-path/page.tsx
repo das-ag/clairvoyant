@@ -54,6 +54,9 @@ export default function SingleSourceShortestPathPage() {
     // Node selection is shared across the graph view, priority queue, and
     // vertex panel — clicking in any of them updates all three.
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    // Transient hover — from the graph, PQ, or vertex panel. Used to drive
+    // the edge-direction glow without changing the committed selection.
+    const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
     // Start-vertex override: pending = selected in dropdown, applied = last
     // committed via Apply (fed into runAlgo). Empty string = use case file.
     const [pendingStartOverride, setPendingStartOverride] = useState<string>("");
@@ -84,6 +87,7 @@ export default function SingleSourceShortestPathPage() {
     const RIGHT_PANEL_WIDTH = 240;
     const RIGHT_GUTTER = RIGHT_PANEL_WIDTH + 24; // panel + left/right padding
     const BOTTOM_GUTTER = 72;
+    const TOP_GUTTER = 60; // Play button / explanation overlay strip
 
     const stepsRef = useRef(steps);
     stepsRef.current = steps;
@@ -425,13 +429,11 @@ export default function SingleSourceShortestPathPage() {
 
                 {/* Right panel: solution viewport */}
                 <div className="relative flex-grow m-2 overflow-hidden min-w-0">
-                    {/* Graph viewport — inset on the right (for PQ/Vertex
-                        stack) and bottom (for stepper bubble) so fit()
-                        never parks nodes under the floating UI. */}
-                    <div
-                        className="absolute top-0 left-0"
-                        style={{ right: `${RIGHT_GUTTER}px`, bottom: `${BOTTOM_GUTTER}px` }}
-                    >
+                    {/* Graph canvas fills the whole right panel so drags
+                        and hovers reach nodes under the floating UI. Fit
+                        uses fitInsets to keep default centering clear of
+                        the right rail and bottom-left stepper. */}
+                    <div className="absolute inset-0">
                         <DijkstraGraphView
                             graph={graph}
                             renderKey={renderKey}
@@ -443,6 +445,9 @@ export default function SingleSourceShortestPathPage() {
                             layoutSpacing={layoutSpacing}
                             selectedNodeId={selectedNodeId}
                             onSelectedNodeChange={setSelectedNodeId}
+                            hoveredNodeId={hoveredNodeId}
+                            onHoveredNodeChange={setHoveredNodeId}
+                            fitInsets={{ top: TOP_GUTTER, right: RIGHT_GUTTER, bottom: BOTTOM_GUTTER }}
                         />
                     </div>
 
@@ -482,11 +487,15 @@ export default function SingleSourceShortestPathPage() {
                             entries={queueEntries}
                             selectedNodeId={selectedNodeId}
                             onSelectedNodeChange={setSelectedNodeId}
+                            hoveredNodeId={hoveredNodeId}
+                            onHoveredNodeChange={setHoveredNodeId}
                         />
                         <VertexPanel
                             snapshot={vertexSnapshot}
                             selectedNodeId={selectedNodeId}
                             onSelectedNodeChange={setSelectedNodeId}
+                            hoveredNodeId={hoveredNodeId}
+                            onHoveredNodeChange={setHoveredNodeId}
                         />
                     </div>
 
