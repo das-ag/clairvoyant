@@ -3,6 +3,7 @@
 import Header from "@/app/components/header";
 import TreeView from "./components/treeView";
 import EditorTabs from "@/app/components/editors/editorTabs";
+import OptionsPanel, { OptionsSection, OptionRow } from "@/app/components/editors/optionsPanel";
 import { GenericGraph, Graph, GraphEdgeSimple, GraphNode, GridGraph } from "@/lib/graphs/graph";
 import { GraphSearchResult, GraphSearchSolution, buildGraphSearchSolution } from "@/lib/graphs/graphsolution"; // Import the missing class
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,7 +19,7 @@ import "./adversarial-search.css";
 import { ItemProperty } from "@/lib/utils/properties";
 import DynamicLabel from "@/app/components/text/dynamicLabel";
 import PlayControls from "@/app/components/controls/playControls";
-import { GAME_CANVAS_X, GAME_CANVAS_Y } from "@/lib/statics/styleConstants";
+import { GAME_CANVAS_X, GAME_CANVAS_Y, buttonStyleClassNames } from "@/lib/statics/styleConstants";
 
 const defaultDraw = (ctx: CanvasRenderingContext2D) => {}
 const MAX_EXPANSION_STEP_SIZE = 100;
@@ -59,6 +60,10 @@ export default function GraphSearchPage() {
     let [activeLine, setActiveLine] = useState<number | null>(null);
 
     let [shownPosition, setShownPosition] = useState<AdversarialSearchPosition | null>(null);
+
+    // Draft player colors for the Options tab (applied on Apply)
+    let [draftPlayer1Color, setDraftPlayer1Color] = useState<string>("");
+    let [draftPlayer2Color, setDraftPlayer2Color] = useState<string>("");
 
     // property management
     let [gameProperties, setGameProperties] = useState<ItemProperty[]>([])
@@ -241,6 +246,27 @@ export default function GraphSearchPage() {
         setGameProperties(game?.properties ?? []);
         setCanvasRenderKey(n => n + 1);
     }, [game]);
+
+    // Keep the Options-tab draft colors in sync with whichever case is loaded.
+    useEffect(() => {
+        const p1 = gameProperties.find(p => p.name === "player_1_color")?.value;
+        const p2 = gameProperties.find(p => p.name === "player_2_color")?.value;
+        if (typeof p1 === "string") setDraftPlayer1Color(p1);
+        if (typeof p2 === "string") setDraftPlayer2Color(p2);
+    }, [gameProperties]);
+
+    const applyPlayerColors = useCallback(() => {
+        if (!game) {
+            toast.error("Load a case first.");
+            return;
+        }
+        game.setProp("player_1_color", draftPlayer1Color);
+        game.setProp("player_2_color", draftPlayer2Color);
+        setGameProperties(game.properties);
+        setCanvasRenderKey(n => n + 1);
+    }, [game, draftPlayer1Color, draftPlayer2Color]);
+
+    const hasPlayerColorProps = gameProperties.some(p => p.name === "player_1_color" || p.name === "player_2_color");
     const onPositionPropertyChange = useCallback((property: string, oldValue: any, newValue: any) => {
         if (property === "__expand") {
             console.log(`Expanding ${shownPosition?.id}`);
@@ -303,6 +329,45 @@ export default function GraphSearchPage() {
                         onCaseDataChanged={onCaseDataChanged}
                         caseErrorMessage={caseErrorMessage}
                         codeMode
+                        options={
+                            <OptionsPanel>
+                                <OptionsSection title="Player colors">
+                                    {hasPlayerColorProps ? (
+                                        <>
+                                            <OptionRow label="1st Player Color">
+                                                <input
+                                                    type="color"
+                                                    value={draftPlayer1Color || "#000000"}
+                                                    onChange={e => setDraftPlayer1Color(e.target.value)}
+                                                    className="h-7 w-12 cursor-pointer rounded"
+                                                />
+                                            </OptionRow>
+                                            <OptionRow label="2nd Player Color">
+                                                <input
+                                                    type="color"
+                                                    value={draftPlayer2Color || "#000000"}
+                                                    onChange={e => setDraftPlayer2Color(e.target.value)}
+                                                    className="h-7 w-12 cursor-pointer rounded"
+                                                />
+                                            </OptionRow>
+                                            <div className="flex flex-row justify-end pt-1">
+                                                <button
+                                                    onClick={applyPlayerColors}
+                                                    className={`${buttonStyleClassNames} px-3 py-1 rounded border border-secondary-200 dark:border-secondary-800 text-sm font-semibold`}
+                                                    title="Apply the selected colors to the game viewport"
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <p className="text-sm text-secondary-600 dark:text-secondary-400 italic">
+                                            Load a case to configure player colors.
+                                        </p>
+                                    )}
+                                </OptionsSection>
+                            </OptionsPanel>
+                        }
                     />
                 </div>
                 <VDivider onWidthChangeRequest={(v => {
@@ -326,7 +391,7 @@ export default function GraphSearchPage() {
                     </div>
                     { game ? 
                         <div className="game-inspector">
-                            <PropertyInspector properties={gameProperties} onChange={(p,o,v) => onGamePropertyChange(p,o,v)}></PropertyInspector>
+                            <PropertyInspector properties={gameProperties.filter(p => p.name !== "player_1_color" && p.name !== "player_2_color")} onChange={(p,o,v) => onGamePropertyChange(p,o,v)}></PropertyInspector>
                         </div> : <></>
                     }
                     
