@@ -167,9 +167,27 @@ export default function SingleSourceShortestPathPage() {
     const answer = currentStep?.answer;
 
     const vertexSnapshot: VertexSnapshot = useMemo(() => {
-        if (stepIndex <= 0 || steps.length === 0) return {};
+        // Pre-step snapshot: populate every graph vertex with the default
+        // "unvisited, d=∞, π=NIL" initial state so the Vertices panel is
+        // fully populated from the moment the graph loads — no stepping
+        // required to see every node listed.
+        if (stepIndex <= 0 || steps.length === 0) {
+            if (!graph) return {};
+            const snap: VertexSnapshot = {};
+            for (const node of graph.getAllNodes()) {
+                snap[node.id] = {
+                    id: node.id,
+                    dist: "∞",
+                    distValue: Infinity,
+                    prev: "NIL",
+                    state: "unvisited",
+                    inQueue: false,
+                };
+            }
+            return snap;
+        }
         return steps[stepIndex - 1]?.vertexSnapshot ?? {};
-    }, [stepIndex, steps]);
+    }, [stepIndex, steps, graph]);
 
     const queueEntries: QueueEntry[] = useMemo(() => {
         if (stepIndex <= 0 || steps.length === 0) return [];
