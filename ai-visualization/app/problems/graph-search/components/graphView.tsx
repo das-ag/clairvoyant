@@ -370,7 +370,7 @@ export default function GraphView({graph, logData, stepIndex, totalSteps, onGrap
                 }}
             ></VisGraph>
             <div className={`graph-helper bg-secondary-100 dark:bg-secondary-900 rounded-xl px-2 py-1`}>
-                <PropertyInspector properties={graph?.properties ?? []} onChange={(propertyName: string, oldValue: any, newValue: any) => {
+                <PropertyInspector properties={(graph?.properties ?? []).filter(p => p.name !== "physics_enabled" && p.name !== "default_bidirectional")} onChange={(propertyName: string, oldValue: any, newValue: any) => {
                     try {
                         graph?.setProp(propertyName, newValue);
                         graphChangedCallback(graph!, false);

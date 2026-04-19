@@ -3,6 +3,7 @@
 import Header from "@/app/components/header";
 import GraphView from "./components/graphView";
 import EditorTabs from "@/app/components/editors/editorTabs";
+import OptionsPanel, { OptionsSection, OptionRow } from "@/app/components/editors/optionsPanel";
 import { Graph, GraphContext, GridGraph } from "@/lib/graphs/graph";
 import { GraphSearchResult, GraphSearchSolution, buildGraphSearchSolution } from "@/lib/graphs/graphsolution";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -201,6 +202,40 @@ export default function GraphSearchPage() {
                         caseData={graphData}
                         onCaseDataChanged={onGraphDataChanged}
                         caseErrorMessage={graphErrorMessage}
+                        options={
+                            <OptionsPanel>
+                                <OptionsSection title="Visual">
+                                    <OptionRow label="Physics" title="Enable vis-network physics simulation so nodes settle dynamically">
+                                        <input
+                                            type="checkbox"
+                                            checked={ctx.graph?.physicsEnabled ?? false}
+                                            disabled={!ctx.graph}
+                                            onChange={e => {
+                                                if (!ctx.graph) return;
+                                                ctx.graph.setProp("physics_enabled", e.target.checked);
+                                                handleGraphBackwardsData(ctx.graph, true);
+                                            }}
+                                            className="accent-amber-400"
+                                        />
+                                    </OptionRow>
+                                </OptionsSection>
+                                <OptionsSection title="Algorithm">
+                                    <OptionRow label="Default bidirectional" title="Whether newly created edges are bidirectional by default">
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(ctx.graph?.properties?.find(p => p.name === "default_bidirectional")?.value)}
+                                            disabled={!ctx.graph}
+                                            onChange={e => {
+                                                if (!ctx.graph) return;
+                                                ctx.graph.setProp("default_bidirectional", e.target.checked);
+                                                handleGraphBackwardsData(ctx.graph, true);
+                                            }}
+                                            className="accent-amber-400"
+                                        />
+                                    </OptionRow>
+                                </OptionsSection>
+                            </OptionsPanel>
+                        }
                     />
                 </div>
                 <VDivider onWidthChangeRequest={(v => {
