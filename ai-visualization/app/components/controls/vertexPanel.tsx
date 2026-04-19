@@ -9,6 +9,8 @@ interface VertexPanelProps {
     snapshot: VertexSnapshot;
     selectedNodeId?: string | null;
     onSelectedNodeChange?: (id: string | null) => void;
+    hoveredNodeId?: string | null;
+    onHoveredNodeChange?: (id: string | null) => void;
 }
 
 const STATE_COLOR: Record<VertexState, string> = {
@@ -25,13 +27,21 @@ const STATE_DOT: Record<VertexState, string> = {
     extracting: "bg-orange-500",
 };
 
-function Row({ entry, expanded, onToggle }: {
+function Row({ entry, expanded, hovered, onToggle, onHoverChange }: {
     entry: VertexSnapshotEntry;
     expanded: boolean;
+    hovered: boolean;
     onToggle: () => void;
+    onHoverChange?: (id: string | null) => void;
 }) {
+    const bg = expanded ? "bg-pink-500/15" : hovered ? "bg-pink-500/10" : "";
     return (
-        <div data-node-id={entry.id} className={`border-b last:border-b-0 border-secondary-900 ${expanded ? "bg-pink-500/15" : ""}`}>
+        <div
+            data-node-id={entry.id}
+            onMouseEnter={() => onHoverChange?.(entry.id)}
+            onMouseLeave={() => onHoverChange?.(null)}
+            className={`border-b last:border-b-0 border-secondary-900 ${bg}`}
+        >
             <button
                 onClick={onToggle}
                 className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 cursor-pointer text-left"
@@ -75,7 +85,7 @@ function PropRow({ label, children }: { label: string; children: React.ReactNode
     );
 }
 
-export default function VertexPanel({ snapshot, selectedNodeId = null, onSelectedNodeChange }: VertexPanelProps) {
+export default function VertexPanel({ snapshot, selectedNodeId = null, onSelectedNodeChange, hoveredNodeId = null, onHoveredNodeChange }: VertexPanelProps) {
     const entries = Object.values(snapshot).sort((a, b) => a.id.localeCompare(b.id));
     const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -109,7 +119,9 @@ export default function VertexPanel({ snapshot, selectedNodeId = null, onSelecte
                             key={entry.id}
                             entry={entry}
                             expanded={selectedNodeId === entry.id}
+                            hovered={hoveredNodeId === entry.id && selectedNodeId !== entry.id}
                             onToggle={() => onSelectedNodeChange?.(selectedNodeId === entry.id ? null : entry.id)}
+                            onHoverChange={onHoveredNodeChange}
                         />
                     ))
                 )}

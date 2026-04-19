@@ -7,13 +7,15 @@ interface PriorityQueuePanelProps {
     entries: QueueEntry[];
     selectedNodeId?: string | null;
     onSelectedNodeChange?: (id: string | null) => void;
+    hoveredNodeId?: string | null;
+    onHoveredNodeChange?: (id: string | null) => void;
 }
 
 function formatDist(d: number): string {
     return d === Infinity ? "∞" : String(d);
 }
 
-export default function PriorityQueuePanel({ entries, selectedNodeId = null, onSelectedNodeChange }: PriorityQueuePanelProps) {
+export default function PriorityQueuePanel({ entries, selectedNodeId = null, onSelectedNodeChange, hoveredNodeId = null, onHoveredNodeChange }: PriorityQueuePanelProps) {
     const scrollRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -50,17 +52,22 @@ export default function PriorityQueuePanel({ entries, selectedNodeId = null, onS
                     <tbody>
                         {entries.map((entry) => {
                             const isSelected = entry.nodeId === selectedNodeId;
+                            const isHovered = entry.nodeId === hoveredNodeId;
                             const rowColor = isSelected
                                 ? "bg-pink-500/20 text-pink-100"
-                                : entry.isBeingExtracted
-                                    ? "bg-amber-500/20 text-amber-300"
-                                    : "text-white/80";
+                                : isHovered
+                                    ? "bg-pink-500/10 text-white"
+                                    : entry.isBeingExtracted
+                                        ? "bg-amber-500/20 text-amber-300"
+                                        : "text-white/80";
                             return (
                                 <tr
                                     key={entry.nodeId}
                                     data-node-id={entry.nodeId}
                                     onClick={() => onSelectedNodeChange?.(isSelected ? null : entry.nodeId)}
-                                    className={`cursor-pointer hover:bg-white/5 ${rowColor}`}
+                                    onMouseEnter={() => onHoveredNodeChange?.(entry.nodeId)}
+                                    onMouseLeave={() => onHoveredNodeChange?.(null)}
+                                    className={`cursor-pointer ${rowColor}`}
                                 >
                                     <td className="px-3 py-1 font-mono">
                                         {entry.isBeingExtracted && (
