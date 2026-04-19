@@ -17,8 +17,6 @@ const js = javascript();
 export default function SolutionEditor({
     problem,
     errorMessage,
-    solutionHeight,
-    runner,
     onSolutionChanged,
     onAnnotationsLoaded,
     activeLine,
@@ -28,8 +26,6 @@ export default function SolutionEditor({
 }: {
     problem: string,
     errorMessage: string,
-    solutionHeight: number,
-    runner: () => void,
     onSolutionChanged: (v: string) => void,
     onAnnotationsLoaded?: (entries: AnnotationEntry[]) => void,
     activeLine?: number | null,
@@ -82,7 +78,7 @@ export default function SolutionEditor({
     }, [problem, fetchAlgorithm])
 
     return (
-    <div className="flex flex-col items-stretch">
+    <div className="flex flex-col items-stretch flex-grow min-h-0">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"></link>
         <div className="flex flex-row justify-between">
             <h2 className="inline-block">Algorithm: </h2>
@@ -90,23 +86,22 @@ export default function SolutionEditor({
         </div>
         <div className="flex flex-row mb-1">
             <Select unstyled className="flex-grow" classNames={{
-                    control: (state) => {return `${buttonStyleClassNames} rounded pl-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`}, 
+                    control: (state) => {return `${buttonStyleClassNames} rounded pl-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`},
                     option: (state) => {return `${buttonStyleClassNames} p-1`}
                 }}
                 options={defaultAlgorithms.map(n => {return {value: n, label: formatPrettyFile(n)}})}
                 value={algoId ? { value: algoId, label: formatPrettyFile(algoId) } : null}
                 onChange={e => {setAlgoId(e?.value ?? ""); fetchAlgorithm(problem, e?.value ?? "");}}>
             </Select>
-            <button onClick={runner} className={`${buttonStyleClassNames} rounded px-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`}>
-                Run
-            </button>
             <a href={`/docs/${problem}`} className={`${buttonStyleClassNames} rounded px-2 border-solid border-2 border-secondary-50 dark:border-secondary-950 flex flex-row justify-around items-center`}>
                 <Image className="dark:invert" src="/DocScroll.png" alt="Documentation Icon" width={24} height={24}></Image>
             </a>
         </div>
-        <div className="flex-grow flex">
+        <div className="flex-grow min-h-0 relative">
             <CodeView
-                style={{height: `${solutionHeight}px`}}
+                containerClassName="absolute inset-0"
+                height="100%"
+                style={{ height: "100%" }}
                 lang="javascript"
                 extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]}
                 value={algoData}

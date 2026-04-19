@@ -2,13 +2,12 @@
 
 import Header from "@/app/components/header";
 import TreeView from "./components/treeView";
-import SolutionEditor from "@/app/components/editors/solutionEditor";
-import CaseEditor from "@/app/components/editors/problemEditor";
+import EditorTabs from "@/app/components/editors/editorTabs";
 import { GenericGraph, Graph, GraphEdgeSimple, GraphNode, GridGraph } from "@/lib/graphs/graph";
 import { GraphSearchResult, GraphSearchSolution, buildGraphSearchSolution } from "@/lib/graphs/graphsolution"; // Import the missing class
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ensureError } from "@/lib/errors/error";
-import { HDivider, VDivider } from "@/app/components/divider";
+import { VDivider } from "@/app/components/divider";
 import { toast } from "react-toastify";
 import Canvas from "@/app/components/graphics/canvas";
 import { AdversarialAlgorithmStep, AdversarialExpansion, AdversarialSearchBuildError, AdversarialSearchSolution, buildAdversarialSolution } from "@/lib/adversarial/adversarialSolution";
@@ -39,7 +38,6 @@ interface ExternalGraphData {
 
 export default function GraphSearchPage() {
     let [leftWidth, setLeftWidth] = useState(480);
-    let [solHeight, setSolHeight] = useState(300);
     let [caseErrorMessage, setCaseErrorMessage] = useState("");
     let [algoErrorMessage, setAlgoErrorMessage] = useState("");
     let [debugData, setDebugData] = useState<any>(null);
@@ -293,13 +291,19 @@ export default function GraphSearchPage() {
     return (
         <div className="flex flex-col h-dvh overflow-hidden">
             <Header selectedPage="adversarialsearch"></Header>
-            <div className="flex flex-row items-stretch flex-grow">
-                <div className="flex flex-col justify-center" style={{"width": `${leftWidth}px`}}>
-                    <SolutionEditor problem="adversarial-search" solutionHeight={solHeight} onSolutionChanged={onAlgoDataChanged} runner={runGameSetup} errorMessage={algoErrorMessage} activeLine={activeLine}></SolutionEditor>
-                    <HDivider onWidthChangeRequest={function (v: number): void {
-                        setSolHeight(solHeight + v);
-                    } }></HDivider>
-                    <CaseEditor problem="adversarial-search" codeMode caseData={caseData} onCaseDataChanged={onCaseDataChanged} errorMessage={caseErrorMessage}></CaseEditor>
+            <div className="flex flex-row items-stretch flex-grow min-h-0">
+                <div className="flex flex-col justify-stretch min-h-0" style={{"width": `${leftWidth}px`}}>
+                    <EditorTabs
+                        problem="adversarial-search"
+                        runner={runGameSetup}
+                        onSolutionChanged={onAlgoDataChanged}
+                        algoErrorMessage={algoErrorMessage}
+                        activeLine={activeLine}
+                        caseData={caseData}
+                        onCaseDataChanged={onCaseDataChanged}
+                        caseErrorMessage={caseErrorMessage}
+                        codeMode
+                    />
                 </div>
                 <VDivider onWidthChangeRequest={(v => {
                     setLeftWidth(leftWidth + v);

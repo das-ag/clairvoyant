@@ -1,8 +1,7 @@
 "use client"
 
 import Header from "@/app/components/header";
-import SolutionEditor from "@/app/components/editors/solutionEditor";
-import CaseEditor from "@/app/components/editors/problemEditor";
+import EditorTabs from "@/app/components/editors/editorTabs";
 import DebugStepper from "@/app/components/controls/debugStepper";
 import WatchPanel, { WatchEntry } from "@/app/components/controls/watchPanel";
 import RBTView from "./components/rbtView";
@@ -10,7 +9,7 @@ import { RBTree } from "@/lib/rbt/rbtree";
 import { RBTStep, RBTSolutionBase, buildRBTSolution } from "@/lib/rbt/rbtSolution";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ensureError } from "@/lib/errors/error";
-import { HDivider, VDivider } from "@/app/components/divider";
+import { VDivider } from "@/app/components/divider";
 import { toast } from "react-toastify";
 import { buttonStyleClassNames } from "@/lib/statics/styleConstants";
 import {
@@ -30,7 +29,6 @@ export default function RedBlackTreePage() {
     let [tree, setTree] = useState<RBTree | null>(null);
     let [solution, setSolution] = useState<RBTSolutionBase | null>(null);
     let [leftWidth, setLeftWidth] = useState(550);
-    let [solHeight, setSolHeight] = useState(670);
     let [caseErrorMessage, setCaseErrorMessage] = useState("");
     let [algoErrorMessage, setAlgoErrorMessage] = useState("");
     let [caseData, setCaseData] = useState("");
@@ -313,24 +311,19 @@ export default function RedBlackTreePage() {
             <div className="flex flex-row items-stretch flex-grow min-h-0">
                 {/* Left panel: editors */}
                 <div className="flex flex-col justify-stretch min-h-0" style={{ width: `${leftWidth}px` }}>
-                    <SolutionEditor
-                        solutionHeight={solHeight}
+                    <EditorTabs
                         problem="red-black-tree"
+                        runner={runBuild}
                         onSolutionChanged={onAlgoDataChanged}
                         onAnnotationsLoaded={onAnnotationsLoaded}
-                        runner={runBuild}
-                        errorMessage={algoErrorMessage}
+                        algoErrorMessage={algoErrorMessage}
                         activeLine={activeLine}
                         annotations={resolvedAnnotations}
                         defaultAnnotations={defaultResolvedAnnotations}
                         onAnnotationEdit={onAnnotationEdit}
-                    />
-                    <HDivider onWidthChangeRequest={(v) => setSolHeight(solHeight + v)} />
-                    <CaseEditor
-                        problem="red-black-tree"
                         caseData={caseData}
                         onCaseDataChanged={onCaseDataChanged}
-                        errorMessage={caseErrorMessage}
+                        caseErrorMessage={caseErrorMessage}
                     />
                 </div>
                 <VDivider onWidthChangeRequest={(v) => setLeftWidth(leftWidth + v)} />

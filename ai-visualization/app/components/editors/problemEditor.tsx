@@ -15,12 +15,11 @@ const init_defaultCases: string[] = [];
 
 const js = javascript();
 
-export default function CaseEditor({problem, errorMessage, caseData, onCaseDataChanged, codeMode = false, solutionHeight = 0}: {
-    problem: string, 
+export default function CaseEditor({problem, errorMessage, caseData, onCaseDataChanged, codeMode = false}: {
+    problem: string,
     errorMessage: string,
     caseData: string,
     codeMode?: boolean,
-    solutionHeight?: number,
     onCaseDataChanged: (v: string) => void
 }) {
     let [caseId, setCaseId] = useState("");
@@ -28,8 +27,6 @@ export default function CaseEditor({problem, errorMessage, caseData, onCaseDataC
     let [defaultCases, setDefaultCases] = useState(init_defaultCases);
     let [currentTheme, setCurrentTheme] = useState("dark");
     let [langData, _setLangData] = useState(js);
-
-    const textRef = useRef<HTMLDivElement>(null);
 
     const fetchCaseData = useCallback((forProblem: string, forCaseId: string) => {
         getCase(forProblem, forCaseId)
@@ -63,7 +60,7 @@ export default function CaseEditor({problem, errorMessage, caseData, onCaseDataC
     }, [fetchCaseData, problem]);
 
     return (
-    <div className="flex-grow flex flex-col items-stretch">
+    <div className="flex-grow flex flex-col items-stretch min-h-0">
         <div className="flex flex-row justify-between">
             <h2 className="inline-block">Case: </h2>
             {codeMode ?
@@ -73,7 +70,7 @@ export default function CaseEditor({problem, errorMessage, caseData, onCaseDataC
         </div>
         <div className="flex flex-row mb-1">
             <Select unstyled className="flex-grow" classNames={{
-                control: (state) => {return `${buttonStyleClassNames} rounded pl-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`}, 
+                control: (state) => {return `${buttonStyleClassNames} rounded pl-2 border-solid border-2 border-secondary-50 dark:border-secondary-950`},
                 option: (state) => {return `${buttonStyleClassNames} p-1`}}}
                 options={defaultCases.map(n => {return {value: n, label: formatPrettyFile(n)}})}
                 value={caseId ? { value: caseId, label: formatPrettyFile(caseId) } : null}
@@ -81,12 +78,12 @@ export default function CaseEditor({problem, errorMessage, caseData, onCaseDataC
             </Select>
             <ClipboardButton textToCopy={caseData} className={`${buttonStyleClassNames} border-2 border-solid border-secondary-50 dark:border-secondary-950 min-w-8 ml-1 rounded px-2`}></ClipboardButton>
         </div>
-        <div className="flex-grow flex flex-col relative" ref={textRef}>
+        <div className="flex-grow min-h-0 flex flex-col relative">
         {codeMode ? (
-            <CodeView className="absolute inset-0" style={{height: `calc(${textRef.current?.clientHeight}px - 1rem)`}} lang="javascript" extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]} value={caseData} onChange={e => onCaseDataChanged(e ?? "")}>
+            <CodeView containerClassName="absolute inset-0" height="100%" style={{ height: "100%" }} lang="javascript" extensions={[themes[currentTheme], syntaxHighlighting(highlights[currentTheme]), langData]} value={caseData} onChange={e => onCaseDataChanged(e ?? "")}>
             </CodeView>
         ) : (
-            <textarea className="flex-grow min-h-0 w-full bg-primary-50 dark:bg-primary-950 text-secondary dark:text-secondary-200" 
+            <textarea className="flex-grow min-h-0 w-full bg-primary-50 dark:bg-primary-950 text-secondary dark:text-secondary-200"
                 value={caseData} onChange={e => onCaseDataChanged(e.target.value ?? "")}>
             </textarea>
         )}

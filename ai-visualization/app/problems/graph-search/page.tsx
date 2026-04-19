@@ -2,13 +2,12 @@
 
 import Header from "@/app/components/header";
 import GraphView from "./components/graphView";
-import SolutionEditor from "@/app/components/editors/solutionEditor";
-import CaseEditor from "@/app/components/editors/problemEditor";
+import EditorTabs from "@/app/components/editors/editorTabs";
 import { Graph, GraphContext, GridGraph } from "@/lib/graphs/graph";
 import { GraphSearchResult, GraphSearchSolution, buildGraphSearchSolution } from "@/lib/graphs/graphsolution";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ensureError } from "@/lib/errors/error";
-import { HDivider, VDivider } from "@/app/components/divider";
+import { VDivider } from "@/app/components/divider";
 import { toast } from "react-toastify";
 
 const INIT_CONTEXT = new GraphContext(null);
@@ -17,7 +16,6 @@ export default function GraphSearchPage() {
     let [ctx, setCtx] = useState(INIT_CONTEXT);
     let [graphData, setGraphData] = useState("");
     let [leftWidth, setLeftWidth] = useState(480);
-    let [solHeight, setSolHeight] = useState(300);
     let [graphErrorMessage, setGraphErrorMessage] = useState("");
     let [algoErrorMessage, setAlgoErrorMessage] = useState("");
     let [debugData, setDebugData] = useState<any>(null);
@@ -192,13 +190,18 @@ export default function GraphSearchPage() {
     return (
         <div className="flex flex-col h-dvh">
             <Header selectedPage="graphsearch"></Header>
-            <div className="flex flex-row items-stretch flex-grow">
-                <div className="flex flex-col justify-stretch" style={{"width": `${leftWidth}px`}}>
-                    <SolutionEditor solutionHeight={solHeight} problem={"graph-search"} onSolutionChanged={onSolutionDataChanged} runner={runAlgo} errorMessage={algoErrorMessage} activeLine={activeLine}></SolutionEditor>
-                    <HDivider onWidthChangeRequest={function (v: number): void {
-                        setSolHeight(solHeight + v);
-                    } }></HDivider>
-                    <CaseEditor problem={"graph-search"} caseData={graphData} onCaseDataChanged={onGraphDataChanged} errorMessage={graphErrorMessage}></CaseEditor>
+            <div className="flex flex-row items-stretch flex-grow min-h-0">
+                <div className="flex flex-col justify-stretch min-h-0" style={{"width": `${leftWidth}px`}}>
+                    <EditorTabs
+                        problem="graph-search"
+                        runner={runAlgo}
+                        onSolutionChanged={onSolutionDataChanged}
+                        algoErrorMessage={algoErrorMessage}
+                        activeLine={activeLine}
+                        caseData={graphData}
+                        onCaseDataChanged={onGraphDataChanged}
+                        caseErrorMessage={graphErrorMessage}
+                    />
                 </div>
                 <VDivider onWidthChangeRequest={(v => {
                     setLeftWidth(leftWidth + v);

@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/app/components/header";
-import SolutionEditor from "@/app/components/editors/solutionEditor";
-import CaseEditor from "@/app/components/editors/problemEditor";
+import EditorTabs from "@/app/components/editors/editorTabs";
 import DebugStepper from "@/app/components/controls/debugStepper";
 import VertexPanel from "@/app/components/controls/vertexPanel";
 import PriorityQueuePanel from "@/app/components/controls/priorityQueuePanel";
 import DijkstraGraphView from "./components/dijkstraGraphView";
 import { LayoutKind, LAYOUT_OPTIONS } from "@/lib/graphs/layouts";
-import { HDivider, VDivider } from "@/app/components/divider";
+import { VDivider } from "@/app/components/divider";
 import { toast } from "react-toastify";
 import { ensureError } from "@/lib/errors/error";
 import { GenericGraph } from "@/lib/graphs/graph";
@@ -35,7 +34,6 @@ import PauseIcon from "@mui/icons-material/Pause";
 export default function SingleSourceShortestPathPage() {
     // ── Layout ───────────────────────────────────────────────────────────────
     const [leftWidth, setLeftWidth] = useState(550);
-    const [solHeight, setSolHeight] = useState(670);
 
     // ── Algorithm state ───────────────────────────────────────────────────────
     const [graph, setGraph] = useState<GenericGraph | null>(null);
@@ -249,24 +247,19 @@ export default function SingleSourceShortestPathPage() {
             <div className="flex flex-row items-stretch flex-grow min-h-0">
                 {/* Left panel: editors */}
                 <div className="flex flex-col justify-stretch min-h-0" style={{ width: `${leftWidth}px` }}>
-                    <SolutionEditor
-                        solutionHeight={solHeight}
+                    <EditorTabs
                         problem="single-source-shortest-path"
+                        runner={runAlgo}
                         onSolutionChanged={onAlgoDataChanged}
                         onAnnotationsLoaded={onAnnotationsLoaded}
-                        runner={runAlgo}
-                        errorMessage={algoErrorMessage}
+                        algoErrorMessage={algoErrorMessage}
                         activeLine={activeLine}
                         annotations={resolvedAnnotations}
                         defaultAnnotations={defaultResolvedAnnotations}
                         onAnnotationEdit={onAnnotationEdit}
-                    />
-                    <HDivider onWidthChangeRequest={(v) => setSolHeight(solHeight + v)} />
-                    <CaseEditor
-                        problem="single-source-shortest-path"
                         caseData={caseData}
                         onCaseDataChanged={onCaseDataChanged}
-                        errorMessage={caseErrorMessage}
+                        caseErrorMessage={caseErrorMessage}
                     />
                 </div>
                 <VDivider onWidthChangeRequest={(v) => setLeftWidth(leftWidth + v)} />
