@@ -51,6 +51,9 @@ export default function SingleSourceShortestPathPage() {
     const [physicsEnabled, setPhysicsEnabled] = useState(false);
     const [layoutSpacing, setLayoutSpacing] = useState(260);
     const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
+    // Node selection is shared across the graph view, priority queue, and
+    // vertex panel — clicking in any of them updates all three.
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     // Start-vertex override: pending = selected in dropdown, applied = last
     // committed via Apply (fed into runAlgo). Empty string = use case file.
     const [pendingStartOverride, setPendingStartOverride] = useState<string>("");
@@ -438,6 +441,8 @@ export default function SingleSourceShortestPathPage() {
                             layoutKind={layoutKind}
                             physicsEnabled={physicsEnabled}
                             layoutSpacing={layoutSpacing}
+                            selectedNodeId={selectedNodeId}
+                            onSelectedNodeChange={setSelectedNodeId}
                         />
                     </div>
 
@@ -473,8 +478,16 @@ export default function SingleSourceShortestPathPage() {
                         className="absolute top-3 right-3 z-20 flex flex-col gap-2"
                         style={{ width: `${RIGHT_PANEL_WIDTH}px` }}
                     >
-                        <PriorityQueuePanel entries={queueEntries} />
-                        <VertexPanel snapshot={vertexSnapshot} />
+                        <PriorityQueuePanel
+                            entries={queueEntries}
+                            selectedNodeId={selectedNodeId}
+                            onSelectedNodeChange={setSelectedNodeId}
+                        />
+                        <VertexPanel
+                            snapshot={vertexSnapshot}
+                            selectedNodeId={selectedNodeId}
+                            onSelectedNodeChange={setSelectedNodeId}
+                        />
                     </div>
 
                     {/* Bottom-left stepper bubble — replaces the old

@@ -102,6 +102,9 @@ function nodeLabel(node: GraphNode): string {
 }
 
 const EXPLORING_BORDER = "#22d3ee"; // cyan-400 — distinct from source white and every fill
+const SELECTED_BORDER = "#EC4899"; // pink-500 — user-selected node; chosen to
+                                   // avoid clash with fills, cyan exploring,
+                                   // white source, and red/green edge glows.
 
 // Direction-aware glow for adjacent edges when a node is selected. Rendered as
 // vis-network edge shadows so the base line color stays intact. Saturated pure
@@ -172,17 +175,21 @@ function getNodeOptions(
     node: GraphNode,
     isExtracting: boolean,
     isExploring: boolean,
+    isSelected: boolean,
 ): NodeOptions {
     const state: string = node.data["state"] ?? "";
     const bg = nodeColor(state, isExtracting);
-    const border = isExploring ? EXPLORING_BORDER : "#0b1220";
-    const borderWidth = isExploring ? 5 : 2;
+    // Selection wins over exploring as the user-driven signal — the
+    // exploring border is a step-driven hint; the pink ring answers
+    // "this is what I clicked."
+    const border = isSelected ? SELECTED_BORDER : isExploring ? EXPLORING_BORDER : "#0b1220";
+    const borderWidth = isSelected || isExploring ? 5 : 2;
     return {
         label: nodeLabel(node),
         color: {
             background: bg,
             border,
-            highlight: { background: bg, border: isExploring ? EXPLORING_BORDER : "#ffffff" },
+            highlight: { background: bg, border: isSelected ? SELECTED_BORDER : isExploring ? EXPLORING_BORDER : "#ffffff" },
         },
         borderWidth,
         shape: "circle",
@@ -242,6 +249,10 @@ interface DijkstraGraphViewProps {
     physicsEnabled?: boolean;
     /** Multiplier on the chosen layout's natural spacing. Default 1. */
     layoutSpacing?: number;
+    /** Node currently selected across the SSSP UI (graph, PQ, vertex panel). */
+    selectedNodeId?: string | null;
+    /** Emit the new selection; null clears. Toggling is the parent's job. */
+    onSelectedNodeChange?: (id: string | null) => void;
 }
 
 export default function DijkstraGraphView({
@@ -253,11 +264,18 @@ export default function DijkstraGraphView({
     layoutKind = "cola",
     physicsEnabled = false,
     layoutSpacing = 1,
+    selectedNodeId = null,
+    onSelectedNodeChange,
 }: DijkstraGraphViewProps) {
     const [visData, setVisData] = useState<GraphData>({ nodes: [], edges: [] });
     const [positions, setPositions] = useState<LayoutPositions>(new Map());
-    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const networkRef = useRef<vis.Network | null>(null);
+    // getNetwork() fires once; refs keep the click handler reading the
+    // latest selectedNodeId / change callback without re-subscribing.
+    const selectedNodeIdRef = useRef<string | null>(selectedNodeId);
+    selectedNodeIdRef.current = selectedNodeId;
+    const onSelectedNodeChangeRef = useRef(onSelectedNodeChange);
+    onSelectedNodeChangeRef.current = onSelectedNodeChange;
 
     const visOptions = useMemo(() => buildVisOptions(physicsEnabled), [physicsEnabled]);
 
@@ -286,18 +304,19 @@ export default function DijkstraGraphView({
             const isSource = node.id === sourceId;
             const isExtracting = node.id === extractingId;
             const isExploring = node.id === exploringId;
+            const isSelected = node.id === selectedNodeId;
             const pos = positions.get(node.id);
             if (isSource) {
                 const state: string = node.data["state"] ?? "";
                 const fill = nodeColor(state, isExtracting);
-                const stroke = isExploring ? EXPLORING_BORDER : "#ffffff";
+                const stroke = isSelected ? SELECTED_BORDER : isExploring ? EXPLORING_BORDER : "#ffffff";
                 return { ...makeSourceNode(node.id, fill, stroke), x: pos?.x, y: pos?.y };
             }
             return {
                 id: node.id,
                 x: pos?.x,
                 y: pos?.y,
-                ...getNodeOptions(node, isExtracting, isExploring),
+                ...getNodeOptions(node, isExtracting, isExploring, isSelected),
             };
         });
 
@@ -362,9 +381,12 @@ export default function DijkstraGraphView({
                     }
                     // Toggle direction-aware glow on click; clicking the
                     // already-selected node (or empty canvas) clears it.
+                    // Parent owns the state so the PQ and Vertex panels
+                    // stay in sync.
                     network.on("click", (params: { nodes: string[] }) => {
                         const clicked = params.nodes[0] ?? null;
-                        setSelectedNodeId(prev => (clicked && clicked !== prev ? clicked : null));
+                        const prev = selectedNodeIdRef.current;
+                        onSelectedNodeChangeRef.current?.(clicked && clicked !== prev ? clicked : null);
                         network.unselectAll();
                     });
                 }}

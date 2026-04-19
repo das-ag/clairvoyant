@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { VertexSnapshot, VertexSnapshotEntry, VertexState } from "@/lib/dijkstra/dijkstraSolution";
 
 interface VertexPanelProps {
     snapshot: VertexSnapshot;
+    selectedNodeId?: string | null;
+    onSelectedNodeChange?: (id: string | null) => void;
 }
 
 const STATE_COLOR: Record<VertexState, string> = {
@@ -29,7 +31,7 @@ function Row({ entry, expanded, onToggle }: {
     onToggle: () => void;
 }) {
     return (
-        <div className="border-b last:border-b-0 border-secondary-900">
+        <div data-node-id={entry.id} className={`border-b last:border-b-0 border-secondary-900 ${expanded ? "bg-pink-500/15" : ""}`}>
             <button
                 onClick={onToggle}
                 className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 cursor-pointer text-left"
@@ -73,10 +75,17 @@ function PropRow({ label, children }: { label: string; children: React.ReactNode
     );
 }
 
-export default function VertexPanel({ snapshot }: VertexPanelProps) {
-    const [openId, setOpenId] = useState<string | null>(null);
-
+export default function VertexPanel({ snapshot, selectedNodeId = null, onSelectedNodeChange }: VertexPanelProps) {
     const entries = Object.values(snapshot).sort((a, b) => a.id.localeCompare(b.id));
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+
+    // When selection changes (e.g. clicked in the graph or PQ), scroll the
+    // matching row into view within this panel's fixed-height body.
+    useEffect(() => {
+        if (!selectedNodeId || !scrollRef.current) return;
+        const el = scrollRef.current.querySelector<HTMLElement>(`[data-node-id="${CSS.escape(selectedNodeId)}"]`);
+        el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, [selectedNodeId]);
 
     return (
         <div className="rounded-lg overflow-hidden border border-secondary-800 bg-primary-950/90 backdrop-blur-sm shadow-lg w-full flex flex-col">
@@ -89,7 +98,7 @@ export default function VertexPanel({ snapshot }: VertexPanelProps) {
             {/* Fixed body height so row expansion scrolls inside the panel
                 instead of pushing the priority queue around; scrollbar is
                 always visible so it doesn't pop in/out as rows expand. */}
-            <div className="h-[180px] overflow-y-scroll">
+            <div ref={scrollRef} className="h-[180px] overflow-y-scroll">
                 {entries.length === 0 ? (
                     <div className="px-3 py-2 text-xs text-secondary-500 italic text-center">
                         no vertices
@@ -99,8 +108,8 @@ export default function VertexPanel({ snapshot }: VertexPanelProps) {
                         <Row
                             key={entry.id}
                             entry={entry}
-                            expanded={openId === entry.id}
-                            onToggle={() => setOpenId(openId === entry.id ? null : entry.id)}
+                            expanded={selectedNodeId === entry.id}
+                            onToggle={() => onSelectedNodeChange?.(selectedNodeId === entry.id ? null : entry.id)}
                         />
                     ))
                 )}
