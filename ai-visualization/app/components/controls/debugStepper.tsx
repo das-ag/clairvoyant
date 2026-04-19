@@ -109,20 +109,21 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
 
     return (
         <div className="debug-stepper flex flex-col">
-            <div className="flex items-center justify-between gap-2 px-1">
-                {/* Step back / forward */}
-                <div className={`flex items-center gap-0.5${navDisabled ? " opacity-40" : ""}`}>
-                    <IconButton size="small" sx={{ color: "white" }} onClick={() => { onPlayingChange(false); goTo(step - 1); }} disabled={navDisabled} aria-label="Step back">
-                        <NavigateBeforeIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" sx={{ color: "white" }} onClick={() => { onPlayingChange(false); goTo(step + 1); }} disabled={navDisabled} aria-label="Step forward">
-                        <NavigateNextIcon fontSize="small" />
-                    </IconButton>
+            <div className="flex items-start justify-between gap-2 px-1">
+                {/* Step back / forward with counter directly below */}
+                <div className="flex flex-col items-center gap-0.5">
+                    <div className={`flex items-center gap-0.5${navDisabled ? " opacity-40" : ""}`}>
+                        <IconButton size="small" sx={{ color: "white" }} onClick={() => { onPlayingChange(false); goTo(step - 1); }} disabled={navDisabled} aria-label="Step back">
+                            <NavigateBeforeIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" sx={{ color: "white" }} onClick={() => { onPlayingChange(false); goTo(step + 1); }} disabled={navDisabled} aria-label="Step forward">
+                            <NavigateNextIcon fontSize="small" />
+                        </IconButton>
+                    </div>
+                    <span className={`text-xs whitespace-nowrap text-white${navDisabled ? " opacity-40" : ""}`}>
+                        Step {step} / {maxSteps}
+                    </span>
                 </div>
-
-                <span className={`text-xs whitespace-nowrap text-white${navDisabled ? " opacity-40" : ""}`}>
-                    Step {step} / {maxSteps}
-                </span>
 
                 {/* Speed: [-] [input] [+] — hidden when the speed is
                     controlled externally (e.g., via the Options tab). */}
