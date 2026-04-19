@@ -43,12 +43,13 @@ type CodeViewProps = {
     annotations?: ResolvedAnnotationMap;
     defaultAnnotations?: ResolvedAnnotationMap;
     onAnnotationEdit?: (line: number, annotation: LineAnnotation | null) => void;
+    containerClassName?: string;
 } & ReactCodeMirrorProps
 
 export default function CodeView(props: CodeViewProps) {
     let containerRef = React.useRef<HTMLDivElement>(null)
     let editorViewRef = useRef<EditorView | null>(null);
-    let { extensions, activeLine, annotations, defaultAnnotations, onAnnotationEdit, ...codeMirrorProps } = props
+    let { extensions, activeLine, annotations, defaultAnnotations, onAnnotationEdit, containerClassName, ...codeMirrorProps } = props
     let [fontSize, setFontSize] = React.useState(14);
     let [extraExtensions, setExtraExtensions] = React.useState<Extension[]>([]);
     let [popover, setPopover] = useState<PopoverState>(null);
@@ -162,7 +163,7 @@ export default function CodeView(props: CodeViewProps) {
     }, [extensions, extraExtensions, showGutter]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-        <div ref={containerRef} style={{ position: "relative" }}>
+        <div ref={containerRef} className={containerClassName ?? "relative"}>
             <ReactCodeMirror
                 extensions={allExtensions}
                 onCreateEditor={(view) => { editorViewRef.current = view; }}
