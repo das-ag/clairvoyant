@@ -75,21 +75,12 @@ export default function SingleSourceShortestPathPage() {
         runAlgo(pendingStartOverride);
     };
 
-    // Height of the bottom stepper overlay, measured so the graph viewport
-    // can exclude it from its fit() area.
-    const [bottomOverlayHeight, setBottomOverlayHeight] = useState(0);
-    const bottomOverlayRef = useRef<HTMLDivElement | null>(null);
-    useEffect(() => {
-        const el = bottomOverlayRef.current;
-        if (!el) return;
-        const ro = new ResizeObserver(entries => {
-            for (const entry of entries) {
-                setBottomOverlayHeight(entry.contentRect.height);
-            }
-        });
-        ro.observe(el);
-        return () => ro.disconnect();
-    }, []);
+    // Gutters reserved so fit() positions the graph clear of the floating
+    // UI: a fixed-width column on the right (PQ + Vertex stack) and a small
+    // strip at the bottom for the stepper bubble.
+    const RIGHT_PANEL_WIDTH = 240;
+    const RIGHT_GUTTER = RIGHT_PANEL_WIDTH + 24; // panel + left/right padding
+    const BOTTOM_GUTTER = 72;
 
     const stepsRef = useRef(steps);
     stepsRef.current = steps;
@@ -431,9 +422,13 @@ export default function SingleSourceShortestPathPage() {
 
                 {/* Right panel: solution viewport */}
                 <div className="relative flex-grow m-2 overflow-hidden min-w-0">
-                    {/* Graph viewport sized to exclude the bottom stepper
-                        overlay so fit() doesn't push nodes underneath it. */}
-                    <div className="absolute top-0 left-0 right-0" style={{ bottom: `${bottomOverlayHeight}px` }}>
+                    {/* Graph viewport — inset on the right (for PQ/Vertex
+                        stack) and bottom (for stepper bubble) so fit()
+                        never parks nodes under the floating UI. */}
+                    <div
+                        className="absolute top-0 left-0"
+                        style={{ right: `${RIGHT_GUTTER}px`, bottom: `${BOTTOM_GUTTER}px` }}
+                    >
                         <DijkstraGraphView
                             graph={graph}
                             renderKey={renderKey}
@@ -471,32 +466,29 @@ export default function SingleSourceShortestPathPage() {
                         </div>
                     ) : null}
 
-                    {/* Top-right: Priority Queue Panel */}
-                    <div className="absolute top-3 right-3 z-20">
+                    {/* Right rail: Priority Queue stacked above Vertices,
+                        both fixed-width so row expansion scrolls inside
+                        the Vertices panel instead of pushing the PQ. */}
+                    <div
+                        className="absolute top-3 right-3 z-20 flex flex-col gap-2"
+                        style={{ width: `${RIGHT_PANEL_WIDTH}px` }}
+                    >
                         <PriorityQueuePanel entries={queueEntries} />
+                        <VertexPanel snapshot={vertexSnapshot} />
                     </div>
 
-                    {/* Bottom overlay: controls */}
-                    <div ref={bottomOverlayRef} className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
-                        <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
-                            {/* Vertex list + Stepper */}
-                            <div className="flex flex-row gap-2 items-start flex-wrap xl:flex-nowrap">
-                                <div className="w-56 shrink-0">
-                                    <VertexPanel snapshot={vertexSnapshot} />
-                                </div>
-                                <div className="flex-grow min-w-0">
-                                    <DebugStepper
-                                        step={stepIndex}
-                                        maxSteps={steps.length}
-                                        playing={playing}
-                                        onPlayingChange={setPlaying}
-                                        onStepChange={onStepChange}
-                                        intervalMs={intervalMs}
-                                        onIntervalMsChange={setIntervalMs}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                    {/* Bottom-left stepper bubble — replaces the old
+                        full-width debugger bar. */}
+                    <div className="absolute bottom-3 left-3 z-20 px-2 py-1 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 shadow-lg">
+                        <DebugStepper
+                            step={stepIndex}
+                            maxSteps={steps.length}
+                            playing={playing}
+                            onPlayingChange={setPlaying}
+                            onStepChange={onStepChange}
+                            intervalMs={intervalMs}
+                            onIntervalMsChange={setIntervalMs}
+                        />
                     </div>
                 </div>
             </div>

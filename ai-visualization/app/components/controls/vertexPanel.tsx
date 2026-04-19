@@ -79,14 +79,17 @@ export default function VertexPanel({ snapshot }: VertexPanelProps) {
     const entries = Object.values(snapshot).sort((a, b) => a.id.localeCompare(b.id));
 
     return (
-        <div className="rounded-lg overflow-hidden border border-secondary-800 bg-primary-950/90 backdrop-blur-sm shadow-lg max-h-56 flex flex-col">
+        <div className="rounded-lg overflow-hidden border border-secondary-800 bg-primary-950/90 backdrop-blur-sm shadow-lg w-full flex flex-col">
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-secondary-800 shrink-0">
                 <span className="text-secondary-400 text-xs font-semibold uppercase tracking-wide">
                     Vertices
                 </span>
                 <span className="text-secondary-500 text-xs font-mono">{entries.length}</span>
             </div>
-            <div className="overflow-y-auto">
+            {/* Fixed body height so row expansion scrolls inside the panel
+                instead of pushing the priority queue around; scrollbar is
+                always visible so it doesn't pop in/out as rows expand. */}
+            <div className="h-[180px] overflow-y-scroll">
                 {entries.length === 0 ? (
                     <div className="px-3 py-2 text-xs text-secondary-500 italic text-center">
                         no vertices

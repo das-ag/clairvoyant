@@ -12,8 +12,8 @@ function formatDist(d: number): string {
 
 export default function PriorityQueuePanel({ entries }: PriorityQueuePanelProps) {
     return (
-        <div className="select-none rounded-lg overflow-hidden shadow-lg border border-secondary-800 bg-primary-950/90 backdrop-blur-sm min-w-[180px]">
-            <div className="flex items-center justify-between px-3 py-1.5 border-b border-secondary-800">
+        <div className="select-none rounded-lg overflow-hidden shadow-lg border border-secondary-800 bg-primary-950/90 backdrop-blur-sm w-full flex flex-col">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-secondary-800 shrink-0">
                 <span className="text-secondary-400 text-xs font-semibold uppercase tracking-wide">
                     Priority Queue
                 </span>
@@ -21,18 +21,21 @@ export default function PriorityQueuePanel({ entries }: PriorityQueuePanelProps)
                     {entries.length}
                 </span>
             </div>
+            {/* Column headers stay visible above the scroll area — they
+                render the same whether the queue is empty or long. */}
+            <div className="flex items-center border-b border-secondary-900 text-secondary-500 text-xs shrink-0">
+                <span className="px-3 py-1 flex-grow">Node</span>
+                <span className="px-3 py-1">dist</span>
+            </div>
+            {/* Body height reserves ~5 rows; scrollbar is always visible so
+                it doesn't pop in/out as the queue grows past the limit. */}
+            <div className="h-[130px] overflow-y-scroll">
             {entries.length === 0 ? (
                 <div className="px-3 py-2 text-xs text-secondary-500 italic text-center">
                     empty
                 </div>
             ) : (
                 <table className="w-full text-xs">
-                    <thead>
-                        <tr className="text-secondary-500">
-                            <th className="text-left px-3 py-1 font-normal">Node</th>
-                            <th className="text-right px-3 py-1 font-normal">dist</th>
-                        </tr>
-                    </thead>
                     <tbody>
                         {entries.map((entry) => (
                             <tr
@@ -55,6 +58,7 @@ export default function PriorityQueuePanel({ entries }: PriorityQueuePanelProps)
                     </tbody>
                 </table>
             )}
+            </div>
         </div>
     );
 }
