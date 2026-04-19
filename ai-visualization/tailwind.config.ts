@@ -1,6 +1,11 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  // Opt out of prefers-color-scheme: dark is toggled by the `dark` class on
+  // <html>, which layout.tsx sets unconditionally. The light theme has
+  // never been designed, so following the system preference was shipping
+  // broken styling to users in light mode.
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
