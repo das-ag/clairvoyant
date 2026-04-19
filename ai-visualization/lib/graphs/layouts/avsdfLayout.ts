@@ -27,13 +27,27 @@ export function computeAvsdfLayout(
 ): Promise<Map<string, { x: number; y: number }>> {
     ensureRegistered();
     const nodeSize = opts.nodeSize ?? 180;
+    // Default spacing lines up with Cola's default linkDistance so all three
+    // layouts respond to the same Options slider on the same scale.
+    const spacing = opts.spacing ?? 260;
 
     const allNodes = graph.getAllNodes();
     if (allNodes.length === 0) return Promise.resolve(new Map());
 
+    // AVSDF sizes the ring from each node's cytoscape width/height. Without
+    // styleEnabled it assumes the 30px default, which clumps large rendered
+    // nodes (54–120 px) on top of each other. Enable styling and declare
+    // widths that match the vis-network render footprint so rings space out
+    // proportionally to what the user actually sees.
     const cy = cytoscape({
         headless: true,
-        styleEnabled: false,
+        styleEnabled: true,
+        style: [
+            {
+                selector: "node",
+                style: { width: nodeSize, height: nodeSize },
+            },
+        ],
         elements: [
             ...allNodes.map(n => ({ data: { id: n.id } })),
             ...graph.getAllEdges().map(e => ({
@@ -45,9 +59,10 @@ export function computeAvsdfLayout(
     return new Promise(resolve => {
         const layout = cy.layout({
             name: "avsdf",
-            // nodeSeparation controls the gap between nodes on the same ring.
-            // Match Cola's footprint so node sizes stay comparable.
-            nodeSeparation: nodeSize / 2,
+            // nodeSeparation is the gap between adjacent nodes on the ring;
+            // feeding the global "spacing" target straight in lets the
+            // Options slider control every layout on the same px scale.
+            nodeSeparation: spacing,
             animate: false,
             fit: false,
         } as any);

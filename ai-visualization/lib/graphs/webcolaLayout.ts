@@ -27,6 +27,11 @@ export interface LayoutOptions {
      * Layout.start. Defaults to [30, 20, 20] — sub-20ms on ≤20-node graphs.
      */
     iterations?: [number, number, number];
+    /**
+     * Target node-to-node distance in logical px; if provided, overrides
+     * linkDistance directly. Default unset.
+     */
+    spacing?: number;
 }
 
 /**
@@ -43,7 +48,7 @@ export function computeWebcolaLayout(
 ): Map<string, { x: number; y: number }> {
     const width = opts.width ?? 1400;
     const height = opts.height ?? 1400;
-    const linkDistance = opts.linkDistance ?? 260;
+    const linkDistance = opts.spacing ?? opts.linkDistance ?? 260;
     const nodeSize = opts.nodeSize ?? 180;
     const iters = opts.iterations ?? [30, 20, 20];
 

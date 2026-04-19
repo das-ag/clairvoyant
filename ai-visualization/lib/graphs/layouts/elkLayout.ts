@@ -17,6 +17,7 @@ export async function computeElkLayout(
     opts: LayoutOptions = {},
 ): Promise<Map<string, { x: number; y: number }>> {
     const nodeSize = opts.nodeSize ?? 180;
+    const spacing = opts.spacing ?? 260;
 
     const allNodes = graph.getAllNodes();
     if (allNodes.length === 0) return new Map();
@@ -26,8 +27,10 @@ export async function computeElkLayout(
         layoutOptions: {
             "elk.algorithm": "layered",
             "elk.direction": "RIGHT",
-            "elk.spacing.nodeNode": "80",
-            "elk.layered.spacing.nodeNodeBetweenLayers": "120",
+            // Feed the shared spacing target directly; layers get 1.5x extra
+            // so hierarchical depth still reads as wider than sibling gaps.
+            "elk.spacing.nodeNode": String(spacing),
+            "elk.layered.spacing.nodeNodeBetweenLayers": String(spacing * 1.5),
         },
         children: allNodes.map(n => ({
             id: n.id,

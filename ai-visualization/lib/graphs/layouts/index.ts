@@ -9,6 +9,12 @@ export type LayoutPositions = Map<string, { x: number; y: number }>;
 export interface ComputeLayoutOptions extends LayoutOptions {
     /** Cycle through alternate Cola seeds; ignored by deterministic layouts. */
     seedBatch?: number;
+    /**
+     * Target distance (in logical px) between adjacent/linked nodes. Feeds
+     * directly into Cola's linkDistance, AVSDF's nodeSeparation, and ELK's
+     * nodeNode spacing (layer spacing scales at 1.5x). Default 260.
+     */
+    spacing?: number;
 }
 
 /**
