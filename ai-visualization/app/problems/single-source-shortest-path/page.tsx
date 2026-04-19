@@ -48,6 +48,23 @@ export default function SingleSourceShortestPathPage() {
     const [layoutSeed, setLayoutSeed] = useState(1);
     const [layoutKind, setLayoutKind] = useState<LayoutKind>("cola");
     const [physicsEnabled, setPhysicsEnabled] = useState(false);
+    const [layoutSpacing, setLayoutSpacing] = useState(260);
+
+    // Height of the bottom stepper overlay, measured so the graph viewport
+    // can exclude it from its fit() area.
+    const [bottomOverlayHeight, setBottomOverlayHeight] = useState(0);
+    const bottomOverlayRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        const el = bottomOverlayRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                setBottomOverlayHeight(entry.contentRect.height);
+            }
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
     const stepsRef = useRef(steps);
     stepsRef.current = steps;
@@ -286,6 +303,34 @@ export default function SingleSourceShortestPathPage() {
                                             Re-layout
                                         </button>
                                     </OptionRow>
+                                    <OptionRow label="Fit view" title="Center and fit the graph to the viewport">
+                                        <button
+                                            onClick={() => fitRef.current?.()}
+                                            className={`${buttonStyleClassNames} px-3 py-1 rounded border border-secondary-200 dark:border-secondary-800 text-sm`}
+                                        >
+                                            Fit
+                                        </button>
+                                    </OptionRow>
+                                    <OptionRow
+                                        label={`Spacing (${layoutSpacing}px)`}
+                                        title={physicsEnabled ? "Incompatible with physics" : "Target distance between adjacent nodes in the layout"}
+                                    >
+                                        <div className="flex flex-col items-end gap-0.5">
+                                            <input
+                                                type="range"
+                                                min="100"
+                                                max="500"
+                                                step="20"
+                                                value={layoutSpacing}
+                                                onChange={e => setLayoutSpacing(parseInt(e.target.value, 10))}
+                                                disabled={physicsEnabled}
+                                                className="accent-amber-400 w-32 disabled:opacity-40 disabled:cursor-not-allowed"
+                                            />
+                                            {physicsEnabled && (
+                                                <span className="text-[10px] italic text-secondary-500">Incompatible with physics</span>
+                                            )}
+                                        </div>
+                                    </OptionRow>
                                 </OptionsSection>
                                 <OptionsSection title="Visual">
                                     <OptionRow label="Physics" title="Let vis-network's physics relax from the seeded positions so dragging propagates through edges">
@@ -305,16 +350,20 @@ export default function SingleSourceShortestPathPage() {
 
                 {/* Right panel: solution viewport */}
                 <div className="relative flex-grow m-2 overflow-hidden min-w-0">
-                    {/* Graph visualization fills entire panel */}
-                    <DijkstraGraphView
-                        graph={graph}
-                        renderKey={renderKey}
-                        currentStep={currentStep}
-                        onFitRef={fitRef}
-                        layoutSeed={layoutSeed}
-                        layoutKind={layoutKind}
-                        physicsEnabled={physicsEnabled}
-                    />
+                    {/* Graph viewport sized to exclude the bottom stepper
+                        overlay so fit() doesn't push nodes underneath it. */}
+                    <div className="absolute top-0 left-0 right-0" style={{ bottom: `${bottomOverlayHeight}px` }}>
+                        <DijkstraGraphView
+                            graph={graph}
+                            renderKey={renderKey}
+                            currentStep={currentStep}
+                            onFitRef={fitRef}
+                            layoutSeed={layoutSeed}
+                            layoutKind={layoutKind}
+                            physicsEnabled={physicsEnabled}
+                            layoutSpacing={layoutSpacing}
+                        />
+                    </div>
 
                     {/* Top-left: Play/Pause */}
                     <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
@@ -347,7 +396,7 @@ export default function SingleSourceShortestPathPage() {
                     </div>
 
                     {/* Bottom overlay: controls */}
-                    <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+                    <div ref={bottomOverlayRef} className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
                         <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
                             {/* Negative weight toggle */}
                             <label className="flex items-center gap-2 text-xs text-secondary-400 mb-2 cursor-pointer select-none w-fit">

@@ -50,17 +50,26 @@ function buildVisOptions(physicsEnabled: boolean): VisGraphOptions {
         // When physics is off the layout positions (set as x/y on each node)
         // are authoritative. When on, vis-network relaxes from those positions
         // — dragging a node propagates through edges via spring forces.
+        //
+        // barnesHut with strong centralGravity + capped maxVelocity keeps the
+        // system bounded; forceAtlas2Based with avoidOverlap lets our 120px
+        // source diamond fling neighbors out faster than springs can pull back.
         physics: physicsEnabled
             ? {
                 enabled: true,
-                stabilization: { enabled: false },
-                solver: "forceAtlas2Based",
-                forceAtlas2Based: {
-                    gravitationalConstant: -50,
+                solver: "barnesHut",
+                barnesHut: {
+                    gravitationalConstant: -8000,
+                    centralGravity: 0.3,
                     springLength: 200,
-                    springConstant: 0.08,
-                    avoidOverlap: 0.5,
+                    springConstant: 0.04,
+                    damping: 0.6,
+                    avoidOverlap: 0.2,
                 },
+                maxVelocity: 40,
+                minVelocity: 0.75,
+                timestep: 0.35,
+                stabilization: { enabled: true, iterations: 200, fit: false },
             }
             : { enabled: false },
         height: "100%",
@@ -217,6 +226,8 @@ interface DijkstraGraphViewProps {
      * nodes stay fixed where the layout placed them.
      */
     physicsEnabled?: boolean;
+    /** Multiplier on the chosen layout's natural spacing. Default 1. */
+    layoutSpacing?: number;
 }
 
 export default function DijkstraGraphView({
@@ -227,6 +238,7 @@ export default function DijkstraGraphView({
     layoutSeed,
     layoutKind = "cola",
     physicsEnabled = false,
+    layoutSpacing = 1,
 }: DijkstraGraphViewProps) {
     const [visData, setVisData] = useState<GraphData>({ nodes: [], edges: [] });
     const [positions, setPositions] = useState<LayoutPositions>(new Map());
@@ -241,11 +253,11 @@ export default function DijkstraGraphView({
         }
         let cancelled = false;
         const seedBatch = Math.max(0, (layoutSeed ?? 1) - 1);
-        computeLayout(graph, layoutKind, { seedBatch }).then(p => {
+        computeLayout(graph, layoutKind, { seedBatch, spacing: layoutSpacing }).then(p => {
             if (!cancelled) setPositions(p);
         });
         return () => { cancelled = true; };
-    }, [graph, layoutKind, layoutSeed]);
+    }, [graph, layoutKind, layoutSeed, layoutSpacing]);
 
     const rebuildVisData = useCallback(() => {
         if (!graph) { setVisData({ nodes: [], edges: [] }); return; }
@@ -294,16 +306,16 @@ export default function DijkstraGraphView({
     }, [rebuildVisData, renderKey]);
 
     // Fit the viewport whenever the layout itself changes (new graph or a
-    // fresh webcola seed) — deferred via rAF so vis-network has committed
-    // the updated node x/y before we ask it to scale them into view. A
-    // synchronous fit here races the data commit and leaves the graph
-    // off-screen.
+    // fresh webcola seed). Using a one-shot "afterDrawing" listener
+    // guarantees fit runs only after vis-network has drawn the new node
+    // coordinates — a rAF callback races the data commit and fits the old
+    // positions, leaving the graph off-screen.
     useEffect(() => {
-        if (!networkRef.current) return;
-        const frame = requestAnimationFrame(() => {
-            networkRef.current?.fit({ animation: false });
-        });
-        return () => cancelAnimationFrame(frame);
+        const net = networkRef.current;
+        if (!net) return;
+        const onFit = () => net.fit({ animation: { duration: 300, easingFunction: "easeInOutQuad" } });
+        net.once("afterDrawing", onFit);
+        return () => { net.off("afterDrawing", onFit); };
     }, [positions]);
 
     // Expose fit function through the ref
