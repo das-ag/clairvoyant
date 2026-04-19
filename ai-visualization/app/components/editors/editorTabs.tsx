@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { buttonStyleClassNames } from "@/lib/statics/styleConstants";
 import SolutionEditor from "./solutionEditor";
 import CaseEditor from "./problemEditor";
 import type { ResolvedAnnotationMap, LineAnnotation, AnnotationEntry } from "@/lib/rbt/rbtAnnotations";
 
-type TabId = "algorithm" | "cases";
+type TabId = "algorithm" | "cases" | "options";
 
 export default function EditorTabs({
     problem,
@@ -20,6 +20,7 @@ export default function EditorTabs({
     caseData,
     onCaseDataChanged,
     codeMode,
+    options,
 }: {
     problem: string,
     runner: () => void,
@@ -34,6 +35,7 @@ export default function EditorTabs({
     caseData: string,
     onCaseDataChanged: (v: string) => void,
     codeMode?: boolean,
+    options?: ReactNode,
 }) {
     const [activeTab, setActiveTab] = useState<TabId>("algorithm");
 
@@ -41,22 +43,23 @@ export default function EditorTabs({
     const activeTabClasses = `${tabButtonBase} border-secondary-50 dark:border-secondary-950 bg-secondary-100 dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 font-semibold`;
     const inactiveTabClasses = `${tabButtonBase} ${buttonStyleClassNames} border-secondary-50 dark:border-secondary-950 opacity-70`;
 
+    const tabButton = (id: TabId, label: string) => (
+        <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={activeTab === id ? activeTabClasses : inactiveTabClasses}
+        >
+            {label}
+        </button>
+    );
+
     return (
         <div className="flex flex-col flex-grow min-h-0">
             <div className="flex flex-row items-end justify-between mb-1 px-1 pt-1 gap-2">
                 <div className="flex flex-row gap-1">
-                    <button
-                        onClick={() => setActiveTab("algorithm")}
-                        className={activeTab === "algorithm" ? activeTabClasses : inactiveTabClasses}
-                    >
-                        Algorithm
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("cases")}
-                        className={activeTab === "cases" ? activeTabClasses : inactiveTabClasses}
-                    >
-                        Cases
-                    </button>
+                    {tabButton("algorithm", "Algorithm")}
+                    {tabButton("cases", "Cases")}
+                    {options !== undefined && tabButton("options", "Options")}
                 </div>
                 <button
                     onClick={runner}
@@ -88,6 +91,11 @@ export default function EditorTabs({
                         codeMode={codeMode}
                     />
                 </div>
+                {options !== undefined && (
+                    <div className={`${activeTab === "options" ? "flex" : "hidden"} flex-col flex-grow min-h-0`}>
+                        {options}
+                    </div>
+                )}
             </div>
         </div>
     );
