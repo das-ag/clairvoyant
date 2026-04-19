@@ -54,7 +54,7 @@ export default function EditorTabs({
     );
 
     return (
-        <div className="flex flex-col flex-grow min-h-0">
+        <div className="flex flex-col flex-grow min-h-0 ml-2">
             <div className="flex flex-row items-end justify-between mb-1 px-1 pt-1 gap-2">
                 <div className="flex flex-row gap-1">
                     {tabButton("algorithm", "Algorithm")}
