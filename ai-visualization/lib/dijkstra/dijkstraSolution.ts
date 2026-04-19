@@ -35,6 +35,22 @@ export interface VertexSnapshotEntry {
 
 export type VertexSnapshot = Record<string, VertexSnapshotEntry>;
 
+export interface VertexHistoryEntry {
+    /** 1-indexed step number, compatible with onStepChange(target). */
+    stepIndex: number;
+    /** 0 = initialization; increments each time an extractMin occurs. */
+    iteration: number;
+    /** Display label at this point: "5", "∞", "t", "NIL", etc. */
+    label: string;
+}
+
+export interface VertexHistory {
+    dist: VertexHistoryEntry[];
+    prev: VertexHistoryEntry[];
+}
+
+export type VertexHistoryMap = Record<string, VertexHistory>;
+
 // ── Step command ──────────────────────────────────────────────────────────────
 // A simple reversible operation that closes over the nodes it mutates.
 // Using a plain interface rather than the generic Command<T> avoids the need

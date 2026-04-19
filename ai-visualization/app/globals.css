@@ -23,3 +23,21 @@ p {
   background-color: rgba(255, 255, 0, 0.12);
   border-left: 3px solid #f0c040;
 }
+/* Thin, unobtrusive scrollbar for the Vertex panel history table. */
+.vertex-hist-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+.vertex-hist-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.vertex-hist-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.vertex-hist-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 3px;
+}
+.vertex-hist-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}

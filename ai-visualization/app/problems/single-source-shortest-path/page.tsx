@@ -21,6 +21,7 @@ import {
     buildDijkstraSolution,
     QueueEntry,
     VertexSnapshot,
+    VertexHistoryMap,
 } from "@/lib/dijkstra/dijkstraSolution";
 import {
     AnnotationEntry,
@@ -188,6 +189,41 @@ export default function SingleSourceShortestPathPage() {
         }
         return steps[stepIndex - 1]?.vertexSnapshot ?? {};
     }, [stepIndex, steps, graph]);
+
+    // Walk steps[0..stepIndex) building a per-vertex history of every
+    // dist[v] / prev[v] transition with the outer-loop iteration it happened
+    // in. Iteration 0 is initialization; it bumps on every extractMin step.
+    // Each entry carries the 1-indexed step number so chips can jump the
+    // player back to that moment.
+    const { vertexHistory, iterationCount } = useMemo(() => {
+        const history: VertexHistoryMap = {};
+        if (!graph) return { vertexHistory: history, iterationCount: 0 };
+        for (const node of graph.getAllNodes()) {
+            history[node.id] = { dist: [], prev: [] };
+        }
+        const lastDist: Record<string, string> = {};
+        const lastPrev: Record<string, string> = {};
+        let iteration = 0;
+        const upto = Math.min(stepIndex, steps.length);
+        for (let i = 0; i < upto; i++) {
+            const step = steps[i];
+            if (step.extractingNodeId) iteration += 1;
+            const snap = step.vertexSnapshot ?? {};
+            for (const id in snap) {
+                const e = snap[id];
+                if (!history[id]) history[id] = { dist: [], prev: [] };
+                if (lastDist[id] !== e.dist) {
+                    history[id].dist.push({ stepIndex: i + 1, iteration, label: e.dist });
+                    lastDist[id] = e.dist;
+                }
+                if (lastPrev[id] !== e.prev) {
+                    history[id].prev.push({ stepIndex: i + 1, iteration, label: e.prev });
+                    lastPrev[id] = e.prev;
+                }
+            }
+        }
+        return { vertexHistory: history, iterationCount: iteration };
+    }, [graph, steps, stepIndex]);
 
     const queueEntries: QueueEntry[] = useMemo(() => {
         if (stepIndex <= 0 || steps.length === 0) return [];
@@ -514,6 +550,10 @@ export default function SingleSourceShortestPathPage() {
                             onSelectedNodeChange={setSelectedNodeId}
                             hoveredNodeId={hoveredNodeId}
                             onHoveredNodeChange={setHoveredNodeId}
+                            history={vertexHistory}
+                            iterationCount={iterationCount}
+                            onJumpToStep={onStepChange}
+                            sourceId={graph?.startNode?.id ?? null}
                         />
                     </div>
 
