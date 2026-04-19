@@ -75,6 +75,14 @@ function buildVisOptions(physicsEnabled: boolean): VisGraphOptions {
         height: "100%",
         interaction: {
             hover: true,
+            // vis-network's built-in "highlight adjacent edges on hover/select"
+            // repaints connected edges with the edge config's highlight color
+            // (white). That clashed with the shared glowSourceId-driven styling
+            // used by the PQ/Vertex panel, so hovering a node in the graph
+            // produced a different look than hovering the same node in a
+            // panel. Disable both so only our logic drives edge appearance.
+            hoverConnectedEdges: false,
+            selectConnectedEdges: false,
             dragNodes: true,
             zoomView: true,
             dragView: true,
@@ -211,10 +219,19 @@ function getEdgeOptions(
     const isIncoming = selectedNodeId !== null && edge.target.id === selectedNodeId;
     const isOutgoing = selectedNodeId !== null && edge.source.id === selectedNodeId;
     const glowColor = isIncoming ? INCOMING_EDGE_GLOW : isOutgoing ? OUTGOING_EDGE_GLOW : null;
+    // Always specify an explicit color. vis-network treats `color: undefined`
+    // as "don't change", so when an edge transitions from relaxing/brightened
+    // back to neutral the previous tint sticks. Pick the right color top-down
+    // on every rebuild.
+    const BASE_EDGE = "#94a3b8";
+    const BRIGHT_EDGE = "#cbd5e1";
+    const edgeColor = isRelaxing
+        ? "#D55E00"
+        : glowColor
+            ? BRIGHT_EDGE
+            : BASE_EDGE;
     return {
-        color: isRelaxing
-            ? { color: "#D55E00", highlight: "#D55E00" }
-            : undefined,
+        color: { color: edgeColor, highlight: edgeColor },
         width: isRelaxing ? Math.max(width + 3, 5) : width,
         label: String(edge.weight),
         font: isRelaxing
