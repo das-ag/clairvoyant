@@ -103,6 +103,13 @@ function nodeLabel(node: GraphNode): string {
 
 const EXPLORING_BORDER = "#22d3ee"; // cyan-400 — distinct from source white and every fill
 
+// Direction-aware glow for adjacent edges when a node is selected. Rendered as
+// vis-network edge shadows so the base line color stays intact. Saturated pure
+// red/green — nudged away from the vermilion extracting/relaxing color
+// (#D55E00) and the teal settled-node color (#009E73) to avoid collisions.
+const INCOMING_EDGE_GLOW = "#16A34A"; // green-600 — "into this node"
+const OUTGOING_EDGE_GLOW = "#DC2626"; // red-600 — "out of this node"
+
 /**
  * Render the source vertex as a true diamond (rotated square) with the id,
  * the fixed distance 0, and "(Start)" stacked inside. vis-network's built-in
@@ -190,9 +197,13 @@ function getNodeOptions(
 function getEdgeOptions(
     edge: { id: string | number; source: GraphNode; target: GraphNode; weight: number; isBidirectional: boolean },
     isRelaxing: boolean,
+    selectedNodeId: string | null,
 ): Record<string, any> {
     const minW = 1.5, maxW = 10;
     const width = Math.min(maxW, minW + Math.max(0, Math.log2(Math.abs(edge.weight) + 1)));
+    const isIncoming = selectedNodeId !== null && edge.target.id === selectedNodeId;
+    const isOutgoing = selectedNodeId !== null && edge.source.id === selectedNodeId;
+    const glowColor = isIncoming ? INCOMING_EDGE_GLOW : isOutgoing ? OUTGOING_EDGE_GLOW : null;
     return {
         color: isRelaxing
             ? { color: "#D55E00", highlight: "#D55E00" }
@@ -203,6 +214,9 @@ function getEdgeOptions(
             ? { ...EDGE_LABEL_FONT, background: "#D55E00" }
             : EDGE_LABEL_FONT,
         arrows: edge.isBidirectional ? "" : "to",
+        shadow: glowColor
+            ? { enabled: true, color: glowColor, size: 14, x: 0, y: 0 }
+            : { enabled: false },
     };
 }
 
@@ -242,6 +256,7 @@ export default function DijkstraGraphView({
 }: DijkstraGraphViewProps) {
     const [visData, setVisData] = useState<GraphData>({ nodes: [], edges: [] });
     const [positions, setPositions] = useState<LayoutPositions>(new Map());
+    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const networkRef = useRef<vis.Network | null>(null);
 
     const visOptions = useMemo(() => buildVisOptions(physicsEnabled), [physicsEnabled]);
@@ -294,12 +309,12 @@ export default function DijkstraGraphView({
                 id: edge.id,
                 from: edge.source.id,
                 to: edge.target.id,
-                ...getEdgeOptions(edge, isRelaxing),
+                ...getEdgeOptions(edge, isRelaxing, selectedNodeId),
             };
         });
 
         setVisData({ nodes, edges });
-    }, [graph, currentStep, positions]);
+    }, [graph, currentStep, positions, selectedNodeId]);
 
     useEffect(() => {
         rebuildVisData();
@@ -345,6 +360,13 @@ export default function DijkstraGraphView({
                             network.fit({ animation: { duration: 300, easingFunction: "easeInOutQuad" } });
                         };
                     }
+                    // Toggle direction-aware glow on click; clicking the
+                    // already-selected node (or empty canvas) clears it.
+                    network.on("click", (params: { nodes: string[] }) => {
+                        const clicked = params.nodes[0] ?? null;
+                        setSelectedNodeId(prev => (clicked && clicked !== prev ? clicked : null));
+                        network.unselectAll();
+                    });
                 }}
             />
         </div>
