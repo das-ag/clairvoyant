@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/app/components/header";
 import EditorTabs from "@/app/components/editors/editorTabs";
 import OptionsPanel, { OptionsSection, OptionRow } from "@/app/components/editors/optionsPanel";
-import { buttonStyleClassNames } from "@/lib/statics/styleConstants";
+import { buttonStyleClassNames, dangerButtonStyleClassNames } from "@/lib/statics/styleConstants";
 import DebugStepper, { DEFAULT_INTERVAL_MS } from "@/app/components/controls/debugStepper";
 import AnimationSpeedRow from "@/app/components/controls/animationSpeedRow";
 import VertexPanel from "@/app/components/controls/vertexPanel";
@@ -51,6 +51,29 @@ export default function SingleSourceShortestPathPage() {
     const [physicsEnabled, setPhysicsEnabled] = useState(false);
     const [layoutSpacing, setLayoutSpacing] = useState(260);
     const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
+    // Start-vertex override: pending = selected in dropdown, applied = last
+    // committed via Apply (fed into runAlgo). Empty string = use case file.
+    const [pendingStartOverride, setPendingStartOverride] = useState<string>("");
+    const [appliedStartOverride, setAppliedStartOverride] = useState<string>("");
+
+    // Reflect the currently-running start in the dropdown whenever the graph
+    // is (re)loaded, so the user always sees what's active — the case file's
+    // START or their applied override.
+    useEffect(() => {
+        if (graph?.startNode) {
+            setPendingStartOverride(graph.startNode.id);
+        }
+    }, [graph]);
+
+    const nodeIds = useMemo(
+        () => (graph ? graph.getAllNodes().map(n => n.id).sort() : []),
+        [graph],
+    );
+
+    const handleApplyAlgorithmOptions = () => {
+        setAppliedStartOverride(pendingStartOverride);
+        runAlgo(pendingStartOverride);
+    };
 
     // Height of the bottom stepper overlay, measured so the graph viewport
     // can exclude it from its fit() area.
@@ -157,7 +180,7 @@ export default function SingleSourceShortestPathPage() {
 
     // ── Run algorithm ─────────────────────────────────────────────────────────
 
-    function runAlgo() {
+    function runAlgo(startOverrideArg?: string) {
         let parsedGraph: GenericGraph;
         try {
             parsedGraph = GenericGraph.fromNotation(caseData) as GenericGraph;
@@ -165,6 +188,18 @@ export default function SingleSourceShortestPathPage() {
             const error = ensureError(err);
             setCaseErrorMessage(error.message);
             return;
+        }
+
+        // Honor an explicit arg from Apply, else fall back to last committed
+        // override from the Algorithm Options section.
+        const override = startOverrideArg !== undefined ? startOverrideArg : appliedStartOverride;
+        if (override) {
+            try {
+                parsedGraph.setProp("start", override);
+            } catch (err) {
+                setCaseErrorMessage(ensureError(err).message);
+                return;
+            }
         }
 
         if (!parsedGraph.startNode) {
@@ -286,6 +321,47 @@ export default function SingleSourceShortestPathPage() {
                                 <OptionsSection title="Animation Options">
                                     <AnimationSpeedRow intervalMs={intervalMs} onIntervalMsChange={setIntervalMs} />
                                 </OptionsSection>
+                                <OptionsSection title="Algorithm Options">
+                                    <OptionRow
+                                        label="Allow negative weights"
+                                        title="Let Dijkstra run on graphs with negative edges to observe its incorrect behavior"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={allowNegativeWeights}
+                                            onChange={e => {
+                                                setAllowNegativeWeights(e.target.checked);
+                                                setCaseErrorMessage("");
+                                            }}
+                                            className="accent-amber-400"
+                                        />
+                                    </OptionRow>
+                                    <OptionRow
+                                        label="Override start vertex"
+                                        title="Pick a different source vertex without editing the case file"
+                                    >
+                                        <select
+                                            value={pendingStartOverride}
+                                            onChange={e => setPendingStartOverride(e.target.value)}
+                                            disabled={nodeIds.length === 0}
+                                            className={`${buttonStyleClassNames} px-2 py-1 rounded border border-secondary-200 dark:border-secondary-800 text-sm disabled:opacity-50`}
+                                        >
+                                            {nodeIds.length === 0 && <option value="">(run once to load)</option>}
+                                            {nodeIds.map(id => (
+                                                <option key={id} value={id}>{id}</option>
+                                            ))}
+                                        </select>
+                                    </OptionRow>
+                                    <div className="flex justify-end pt-1">
+                                        <button
+                                            onClick={handleApplyAlgorithmOptions}
+                                            disabled={!graph}
+                                            className={`${dangerButtonStyleClassNames} px-3 py-1 rounded text-sm disabled:opacity-50`}
+                                        >
+                                            Apply
+                                        </button>
+                                    </div>
+                                </OptionsSection>
                                 <OptionsSection title="Layout">
                                     <OptionRow label="Algorithm" title="Choose the layout algorithm used to seed node positions">
                                         <select
@@ -403,20 +479,6 @@ export default function SingleSourceShortestPathPage() {
                     {/* Bottom overlay: controls */}
                     <div ref={bottomOverlayRef} className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
                         <div className="pointer-events-auto p-3 bg-primary-950/80 backdrop-blur-sm border-t border-secondary-800">
-                            {/* Negative weight toggle */}
-                            <label className="flex items-center gap-2 text-xs text-secondary-400 mb-2 cursor-pointer select-none w-fit">
-                                <input
-                                    type="checkbox"
-                                    checked={allowNegativeWeights}
-                                    onChange={e => {
-                                        setAllowNegativeWeights(e.target.checked);
-                                        setCaseErrorMessage("");
-                                    }}
-                                    className="accent-amber-400"
-                                />
-                                <span>Allow negative weights <span className="text-amber-400">(observe incorrect behavior)</span></span>
-                            </label>
-
                             {/* Vertex list + Stepper */}
                             <div className="flex flex-row gap-2 items-start flex-wrap xl:flex-nowrap">
                                 <div className="w-56 shrink-0">
