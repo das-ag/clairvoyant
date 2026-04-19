@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/app/components/header";
 import EditorTabs from "@/app/components/editors/editorTabs";
+import OptionsPanel, { OptionsSection, OptionRow } from "@/app/components/editors/optionsPanel";
+import { buttonStyleClassNames } from "@/lib/statics/styleConstants";
 import DebugStepper from "@/app/components/controls/debugStepper";
 import VertexPanel from "@/app/components/controls/vertexPanel";
 import PriorityQueuePanel from "@/app/components/controls/priorityQueuePanel";
@@ -260,6 +262,43 @@ export default function SingleSourceShortestPathPage() {
                         caseData={caseData}
                         onCaseDataChanged={onCaseDataChanged}
                         caseErrorMessage={caseErrorMessage}
+                        options={
+                            <OptionsPanel>
+                                <OptionsSection title="Layout">
+                                    <OptionRow label="Algorithm" title="Choose the layout algorithm used to seed node positions">
+                                        <select
+                                            value={layoutKind}
+                                            onChange={e => setLayoutKind(e.target.value as LayoutKind)}
+                                            className={`${buttonStyleClassNames} px-2 py-1 rounded border border-secondary-200 dark:border-secondary-800 text-sm`}
+                                        >
+                                            {LAYOUT_OPTIONS.map(opt => (
+                                                <option key={opt.value} value={opt.value}>
+                                                    {opt.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </OptionRow>
+                                    <OptionRow label="Re-layout" title="Re-run the auto-layout (Cola cycles seeds; AVSDF/ELK simply recompute)">
+                                        <button
+                                            onClick={() => setLayoutSeed(s => s + 1)}
+                                            className={`${buttonStyleClassNames} px-3 py-1 rounded border border-secondary-200 dark:border-secondary-800 text-sm`}
+                                        >
+                                            Re-layout
+                                        </button>
+                                    </OptionRow>
+                                </OptionsSection>
+                                <OptionsSection title="Visual">
+                                    <OptionRow label="Physics" title="Let vis-network's physics relax from the seeded positions so dragging propagates through edges">
+                                        <input
+                                            type="checkbox"
+                                            checked={physicsEnabled}
+                                            onChange={e => setPhysicsEnabled(e.target.checked)}
+                                            className="accent-amber-400"
+                                        />
+                                    </OptionRow>
+                                </OptionsSection>
+                            </OptionsPanel>
+                        }
                     />
                 </div>
                 <VDivider onWidthChangeRequest={(v) => setLeftWidth(leftWidth + v)} />
@@ -277,7 +316,7 @@ export default function SingleSourceShortestPathPage() {
                         physicsEnabled={physicsEnabled}
                     />
 
-                    {/* Top-left: Play/Pause + Fit */}
+                    {/* Top-left: Play/Pause */}
                     <div className="absolute top-3 left-3 z-20 flex flex-col gap-2">
                         {steps.length > 0 && (
                             <button
@@ -288,37 +327,6 @@ export default function SingleSourceShortestPathPage() {
                                 <span>{playing ? "Pause" : "Play"} animation</span>
                             </button>
                         )}
-                        <button
-                            onClick={() => setLayoutSeed(s => s + 1)}
-                            title="Re-run the auto-layout (Cola cycles seeds; AVSDF/ELK simply recompute)"
-                            className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
-                        >
-                            Re-layout
-                        </button>
-                        <select
-                            value={layoutKind}
-                            onChange={e => setLayoutKind(e.target.value as LayoutKind)}
-                            title="Choose the layout algorithm used to seed node positions"
-                            className="px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100 focus:outline-none focus:opacity-100"
-                        >
-                            {LAYOUT_OPTIONS.map(opt => (
-                                <option key={opt.value} value={opt.value} className="bg-primary-950 text-white">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <label
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100 select-none"
-                            title="Let vis-network's physics relax from the seeded positions so dragging propagates through edges"
-                        >
-                            <input
-                                type="checkbox"
-                                checked={physicsEnabled}
-                                onChange={e => setPhysicsEnabled(e.target.checked)}
-                                className="accent-amber-400"
-                            />
-                            <span>Physics</span>
-                        </label>
                     </div>
 
                     {/* Top-center: Annotation Q&A / explanation */}
