@@ -62,7 +62,7 @@ export default function EditorTabs({
                     {options !== undefined && tabButton("options", "Options")}
                 </div>
                 <button
-                    onClick={runner}
+                    onClick={() => runner()}
                     className={`${buttonStyleClassNames} rounded px-3 py-1 border-solid border-2 border-secondary-50 dark:border-secondary-950 font-semibold`}
                     title="Run the current algorithm against the current case"
                 >
