@@ -4,6 +4,8 @@ import Header from "@/app/components/header";
 import GraphView from "./components/graphView";
 import EditorTabs from "@/app/components/editors/editorTabs";
 import OptionsPanel, { OptionsSection, OptionRow } from "@/app/components/editors/optionsPanel";
+import { DEFAULT_INTERVAL_MS } from "@/app/components/controls/debugStepper";
+import AnimationSpeedRow from "@/app/components/controls/animationSpeedRow";
 import { Graph, GraphContext, GridGraph } from "@/lib/graphs/graph";
 import { GraphSearchResult, GraphSearchSolution, buildGraphSearchSolution } from "@/lib/graphs/graphsolution";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -23,6 +25,7 @@ export default function GraphSearchPage() {
     let [solutionData, setSolutionData] = useState("");
     let [graphSteps, setGraphSteps] = useState<GraphSearchResult[]>([]);
     let [graphStepIndex, setGraphStepIndex] = useState(0);
+    const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
     
     const activeLine = useMemo(() => {
         if (graphStepIndex <= 0 || graphSteps.length === 0) return null;
@@ -204,6 +207,9 @@ export default function GraphSearchPage() {
                         caseErrorMessage={graphErrorMessage}
                         options={
                             <OptionsPanel>
+                                <OptionsSection title="Animation Options">
+                                    <AnimationSpeedRow intervalMs={intervalMs} onIntervalMsChange={setIntervalMs} />
+                                </OptionsSection>
                                 <OptionsSection title="Visual">
                                     <OptionRow label="Physics" title="Enable vis-network physics simulation so nodes settle dynamically">
                                         <input
@@ -243,7 +249,8 @@ export default function GraphSearchPage() {
                 })}></VDivider>
                 <div className="p-3 m-2 flex-grow">
                     <GraphView graph={ctx.graph} stepHandler={onStepRequested} onGraphChanged={handleGraphBackwardsData}
-                    totalSteps={graphSteps.length} logData={debugData} stepIndex={graphStepIndex} explanation={explanation}></GraphView>
+                    totalSteps={graphSteps.length} logData={debugData} stepIndex={graphStepIndex} explanation={explanation}
+                    intervalMs={intervalMs} onIntervalMsChange={setIntervalMs}></GraphView>
                 </div>
             </div>
         </div>

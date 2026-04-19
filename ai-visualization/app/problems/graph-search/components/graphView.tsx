@@ -198,7 +198,7 @@ const nodeCreationProperties: ItemProperty[] = [
     {name: "id", type: "string", value: "", dynamic: true},
 ]
 
-export default function GraphView({graph, logData, stepIndex, totalSteps, onGraphChanged, stepHandler, explanation}: {
+export default function GraphView({graph, logData, stepIndex, totalSteps, onGraphChanged, stepHandler, explanation, intervalMs, onIntervalMsChange}: {
     graph: Graph | null,
     logData: any,
     stepIndex: number,
@@ -206,6 +206,8 @@ export default function GraphView({graph, logData, stepIndex, totalSteps, onGrap
     onGraphChanged: (graph: Graph, visual: boolean) => void,
     stepHandler: (step: number) => void,
     explanation?: string,
+    intervalMs?: number,
+    onIntervalMsChange?: (ms: number) => void,
 }) {
     const stringifySteps = () => {
         return `${stepIndex}/${totalSteps}`
@@ -408,7 +410,7 @@ export default function GraphView({graph, logData, stepIndex, totalSteps, onGrap
                 {renderValue(logData)}
             </div>) : <></>}
         </div>
-        <DebugStepper onStepChange={handleStepCallback} step={stepIndex} maxSteps={totalSteps} explanation={explanation} />
+        <DebugStepper onStepChange={handleStepCallback} step={stepIndex} maxSteps={totalSteps} explanation={explanation} intervalMs={intervalMs} onIntervalMsChange={onIntervalMsChange} />
     </div>
     )
 }

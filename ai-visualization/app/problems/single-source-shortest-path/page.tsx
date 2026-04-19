@@ -5,7 +5,8 @@ import Header from "@/app/components/header";
 import EditorTabs from "@/app/components/editors/editorTabs";
 import OptionsPanel, { OptionsSection, OptionRow } from "@/app/components/editors/optionsPanel";
 import { buttonStyleClassNames } from "@/lib/statics/styleConstants";
-import DebugStepper from "@/app/components/controls/debugStepper";
+import DebugStepper, { DEFAULT_INTERVAL_MS } from "@/app/components/controls/debugStepper";
+import AnimationSpeedRow from "@/app/components/controls/animationSpeedRow";
 import VertexPanel from "@/app/components/controls/vertexPanel";
 import PriorityQueuePanel from "@/app/components/controls/priorityQueuePanel";
 import DijkstraGraphView from "./components/dijkstraGraphView";
@@ -49,6 +50,7 @@ export default function SingleSourceShortestPathPage() {
     const [layoutKind, setLayoutKind] = useState<LayoutKind>("cola");
     const [physicsEnabled, setPhysicsEnabled] = useState(false);
     const [layoutSpacing, setLayoutSpacing] = useState(260);
+    const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
 
     // Height of the bottom stepper overlay, measured so the graph viewport
     // can exclude it from its fit() area.
@@ -281,6 +283,9 @@ export default function SingleSourceShortestPathPage() {
                         caseErrorMessage={caseErrorMessage}
                         options={
                             <OptionsPanel>
+                                <OptionsSection title="Animation Options">
+                                    <AnimationSpeedRow intervalMs={intervalMs} onIntervalMsChange={setIntervalMs} />
+                                </OptionsSection>
                                 <OptionsSection title="Layout">
                                     <OptionRow label="Algorithm" title="Choose the layout algorithm used to seed node positions">
                                         <select
@@ -424,6 +429,8 @@ export default function SingleSourceShortestPathPage() {
                                         playing={playing}
                                         onPlayingChange={setPlaying}
                                         onStepChange={onStepChange}
+                                        intervalMs={intervalMs}
+                                        onIntervalMsChange={setIntervalMs}
                                     />
                                 </div>
                             </div>

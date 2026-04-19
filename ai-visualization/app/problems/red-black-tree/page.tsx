@@ -3,7 +3,8 @@
 import Header from "@/app/components/header";
 import EditorTabs from "@/app/components/editors/editorTabs";
 import OptionsPanel, { OptionsSection, OptionRow } from "@/app/components/editors/optionsPanel";
-import DebugStepper from "@/app/components/controls/debugStepper";
+import DebugStepper, { DEFAULT_INTERVAL_MS } from "@/app/components/controls/debugStepper";
+import AnimationSpeedRow from "@/app/components/controls/animationSpeedRow";
 import WatchPanel, { WatchEntry } from "@/app/components/controls/watchPanel";
 import RBTView from "./components/rbtView";
 import { RBTree } from "@/lib/rbt/rbtree";
@@ -38,6 +39,7 @@ export default function RedBlackTreePage() {
     let [stepIndex, setStepIndex] = useState(0);
     let [renderKey, setRenderKey] = useState(0);
     let [playing, setPlaying] = useState(false);
+    const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
     const fitRef = useRef<(() => void) | null>(null);
     const hasAutoRun = useRef(false);
     const runBuildRef = useRef<() => void>(() => {});
@@ -327,6 +329,9 @@ export default function RedBlackTreePage() {
                         caseErrorMessage={caseErrorMessage}
                         options={
                             <OptionsPanel>
+                                <OptionsSection title="Animation Options">
+                                    <AnimationSpeedRow intervalMs={intervalMs} onIntervalMsChange={setIntervalMs} />
+                                </OptionsSection>
                                 <OptionsSection title="Visual">
                                     <OptionRow label="Fit view" title="Center and fit the tree to the viewport">
                                         <button
@@ -430,6 +435,8 @@ export default function RedBlackTreePage() {
                                         onPlayingChange={setPlaying}
                                         onStepChange={onStepChange}
                                         caseSteps={caseStepIndices}
+                                        intervalMs={intervalMs}
+                                        onIntervalMsChange={setIntervalMs}
                                     />
                                 </div>
                             </div>

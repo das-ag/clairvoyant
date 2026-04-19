@@ -7,10 +7,9 @@ import RemoveIcon from "@mui/icons-material/Remove";
 
 import "./debugStepper.css";
 
-const MIN_INTERVAL_MS = 150;
-const MAX_INTERVAL_MS = 2000;
-const DEFAULT_INTERVAL_MS = 800;
-const SPEED_STEP_MS = 50;
+export const MAX_INTERVAL_MS = 2000;
+export const DEFAULT_INTERVAL_MS = 800;
+export const SPEED_STEP_MS = 50;
 
 export interface DebugStepperProps {
     step: number;
@@ -22,17 +21,32 @@ export interface DebugStepperProps {
     onPlayingChange?: (playing: boolean) => void;
     onStepChange: (step: number) => void;
     caseSteps?: Set<number>;
+    /**
+     * When provided, the stepper becomes externally speed-controlled and
+     * its inline speed UI is hidden — callers render the control in their
+     * own Options panel instead.
+     */
+    intervalMs?: number;
+    onIntervalMsChange?: (ms: number) => void;
 }
 
-function clampSpeed(v: number) {
-    return Math.max(MIN_INTERVAL_MS, Math.min(MAX_INTERVAL_MS, v));
+export function clampSpeed(v: number) {
+    // Lower bound removed — 0 ms allows effectively instant playback. Still
+    // cap at the upper end so a stray large value can't stall the timer.
+    return Math.max(0, Math.min(MAX_INTERVAL_MS, v));
 }
 
-export default function DebugStepper({ step, maxSteps, explanation, question, answer, playing: playingProp, onPlayingChange: onPlayingChangeProp, onStepChange, caseSteps }: DebugStepperProps) {
+export default function DebugStepper({ step, maxSteps, explanation, question, answer, playing: playingProp, onPlayingChange: onPlayingChangeProp, onStepChange, caseSteps, intervalMs: intervalMsProp, onIntervalMsChange }: DebugStepperProps) {
     const [internalPlaying, setInternalPlaying] = useState(false);
     const playing = playingProp ?? internalPlaying;
     const onPlayingChange = onPlayingChangeProp ?? setInternalPlaying;
-    const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
+    const isControlled = intervalMsProp !== undefined;
+    const [internalIntervalMs, setInternalIntervalMs] = useState(DEFAULT_INTERVAL_MS);
+    const intervalMs = intervalMsProp ?? internalIntervalMs;
+    const setIntervalMs = (ms: number) => {
+        if (isControlled) onIntervalMsChange?.(ms);
+        else setInternalIntervalMs(ms);
+    };
     const [speedInput, setSpeedInput] = useState(String(DEFAULT_INTERVAL_MS));
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const stepRef = useRef(step);
@@ -44,11 +58,11 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
         onStepChange(Math.max(0, Math.min(s, maxSteps)));
     }, [maxSteps, onStepChange]);
 
-    const updateSpeed = useCallback((ms: number) => {
+    const updateSpeed = (ms: number) => {
         const clamped = clampSpeed(ms);
         setIntervalMs(clamped);
         setSpeedInput(String(clamped));
-    }, []);
+    };
 
     const caseStepsRef = useRef(caseSteps);
     caseStepsRef.current = caseSteps;
@@ -110,25 +124,28 @@ export default function DebugStepper({ step, maxSteps, explanation, question, an
                     Step {step} / {maxSteps}
                 </span>
 
-                {/* Speed: [-] [input] [+] */}
-                <div className="flex items-center gap-0">
-                    <IconButton size="small" sx={{ color: "white" }} onClick={() => updateSpeed(intervalMs - SPEED_STEP_MS)} aria-label="Decrease speed">
-                        <RemoveIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                    <input
-                        type="text"
-                        inputMode="numeric"
-                        className="debug-stepper-speed-input"
-                        value={speedInput}
-                        onChange={(e) => setSpeedInput(e.target.value)}
-                        onBlur={commitSpeedInput}
-                        onKeyDown={(e) => { if (e.key === "Enter") commitSpeedInput(); }}
-                    />
-                    <IconButton size="small" sx={{ color: "white" }} onClick={() => updateSpeed(intervalMs + SPEED_STEP_MS)} aria-label="Increase speed">
-                        <AddIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                    <span className="text-[10px] text-white opacity-70 ml-0.5">ms</span>
-                </div>
+                {/* Speed: [-] [input] [+] — hidden when the speed is
+                    controlled externally (e.g., via the Options tab). */}
+                {!isControlled && (
+                    <div className="flex items-center gap-0">
+                        <IconButton size="small" sx={{ color: "white" }} onClick={() => updateSpeed(intervalMs - SPEED_STEP_MS)} aria-label="Decrease speed">
+                            <RemoveIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            className="debug-stepper-speed-input"
+                            value={speedInput}
+                            onChange={(e) => setSpeedInput(e.target.value)}
+                            onBlur={commitSpeedInput}
+                            onKeyDown={(e) => { if (e.key === "Enter") commitSpeedInput(); }}
+                        />
+                        <IconButton size="small" sx={{ color: "white" }} onClick={() => updateSpeed(intervalMs + SPEED_STEP_MS)} aria-label="Increase speed">
+                            <AddIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                        <span className="text-[10px] text-white opacity-70 ml-0.5">ms</span>
+                    </div>
+                )}
 
             </div>
 
