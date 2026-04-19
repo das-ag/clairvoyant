@@ -6,7 +6,7 @@ import * as vis from "vis-network";
 import { Font, NodeOptions } from "vis-network";
 import { GenericGraph } from "@/lib/graphs/graph";
 import { GraphNode } from "@/lib/graphs/components";
-import { computeBestLayout } from "@/lib/graphs/webcolaLayout";
+import { computeLayout, LayoutKind, LayoutPositions } from "@/lib/graphs/layouts";
 import { DijkstraStep } from "@/lib/dijkstra/dijkstraSolution";
 
 // ── vis.js options ────────────────────────────────────────────────────────────
@@ -32,36 +32,46 @@ const EDGE_LABEL_FONT: Font = {
     face: "ui-monospace, SFMono-Regular, Menlo, monospace",
 };
 
-const VIS_OPTIONS: VisGraphOptions = {
-    edges: {
-        font: EDGE_LABEL_FONT,
-        color: { color: "#94a3b8", highlight: "#ffffff" },
-        // Curved edges pull the path off the straight line between nodes,
-        // so the weight chip doesn't sit directly on top of intervening
-        // nodes or other edges at the midpoint.
-        smooth: { enabled: true, type: "curvedCW", roundness: 0.2 },
-        arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-    },
-    nodes: {
-        font: BASE_FONT,
-        shape: "circle",
-        widthConstraint: { minimum: NODE_MIN_WIDTH },
-        // heightConstraint is supported by vis-network but missing from its typings.
-        heightConstraint: { minimum: NODE_MIN_HEIGHT, valign: "middle" },
-        margin: { top: 8, right: 12, bottom: 8, left: 12 },
-    } as any,
-    // Physics disabled — layout is computed by webcola upstream and fed as
-    // {x, y} on each node. vis-network just renders the result. Nodes stay
-    // draggable because interaction.dragNodes is unaffected.
-    physics: { enabled: false },
-    height: "100%",
-    interaction: {
-        hover: true,
-        dragNodes: true,
-        zoomView: true,
-        dragView: true,
-    },
-};
+function buildVisOptions(physicsEnabled: boolean): VisGraphOptions {
+    return {
+        edges: {
+            font: EDGE_LABEL_FONT,
+            color: { color: "#94a3b8", highlight: "#ffffff" },
+            smooth: { enabled: true, type: "curvedCW", roundness: 0.2 },
+            arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+        },
+        nodes: {
+            font: BASE_FONT,
+            shape: "circle",
+            widthConstraint: { minimum: NODE_MIN_WIDTH },
+            heightConstraint: { minimum: NODE_MIN_HEIGHT, valign: "middle" },
+            margin: { top: 8, right: 12, bottom: 8, left: 12 },
+        } as any,
+        // When physics is off the layout positions (set as x/y on each node)
+        // are authoritative. When on, vis-network relaxes from those positions
+        // — dragging a node propagates through edges via spring forces.
+        physics: physicsEnabled
+            ? {
+                enabled: true,
+                stabilization: { enabled: false },
+                solver: "forceAtlas2Based",
+                forceAtlas2Based: {
+                    gravitationalConstant: -50,
+                    springLength: 200,
+                    springConstant: 0.08,
+                    avoidOverlap: 0.5,
+                },
+            }
+            : { enabled: false },
+        height: "100%",
+        interaction: {
+            hover: true,
+            dragNodes: true,
+            zoomView: true,
+            dragView: true,
+        },
+    };
+}
 
 // ── Node / edge colour helpers ────────────────────────────────────────────────
 
@@ -169,7 +179,7 @@ function getNodeOptions(
 }
 
 function getEdgeOptions(
-    edge: { id: number; source: GraphNode; target: GraphNode; weight: number; isBidirectional: boolean },
+    edge: { id: string | number; source: GraphNode; target: GraphNode; weight: number; isBidirectional: boolean },
     isRelaxing: boolean,
 ): Record<string, any> {
     const minW = 1.5, maxW = 10;
@@ -195,11 +205,18 @@ interface DijkstraGraphViewProps {
     currentStep?: DijkstraStep;
     onFitRef?: React.MutableRefObject<(() => void) | null>;
     /**
-     * Bumping this seed re-runs webcola with a different initial jitter,
-     * producing a different (usually also clean) layout — the user-facing
-     * "Re-layout" button wires into this.
+     * Bumping this seed re-runs the layout. For Cola this advances the
+     * best-of-N seed batch; for AVSDF/ELK (deterministic) it just recomputes.
      */
     layoutSeed?: number;
+    /** Which layout algorithm to use to seed positions. */
+    layoutKind?: LayoutKind;
+    /**
+     * When true, vis-network physics relaxes from the seeded positions, so
+     * dragging a node propagates through the spring network. When false,
+     * nodes stay fixed where the layout placed them.
+     */
+    physicsEnabled?: boolean;
 }
 
 export default function DijkstraGraphView({
@@ -208,20 +225,27 @@ export default function DijkstraGraphView({
     currentStep,
     onFitRef,
     layoutSeed,
+    layoutKind = "cola",
+    physicsEnabled = false,
 }: DijkstraGraphViewProps) {
     const [visData, setVisData] = useState<GraphData>({ nodes: [], edges: [] });
+    const [positions, setPositions] = useState<LayoutPositions>(new Map());
     const networkRef = useRef<vis.Network | null>(null);
 
-    const positions = useMemo(() => {
-        if (!graph) return new Map<string, { x: number; y: number }>();
-        // Try a pool of seeds on every layout change and pick the one with
-        // fewest edge crossings so the *default* layout is already decent —
-        // users don't have to click Re-layout to escape a bad seed. Each
-        // Re-layout click advances `layoutSeed`, which shifts the pool of
-        // seeds we search so the next attempt is a genuinely different
-        // best-of-N rather than the same winner.
-        return computeBestLayout(graph, { seedBatch: Math.max(0, (layoutSeed ?? 1) - 1) });
-    }, [graph, layoutSeed]);
+    const visOptions = useMemo(() => buildVisOptions(physicsEnabled), [physicsEnabled]);
+
+    useEffect(() => {
+        if (!graph) {
+            setPositions(new Map());
+            return;
+        }
+        let cancelled = false;
+        const seedBatch = Math.max(0, (layoutSeed ?? 1) - 1);
+        computeLayout(graph, layoutKind, { seedBatch }).then(p => {
+            if (!cancelled) setPositions(p);
+        });
+        return () => { cancelled = true; };
+    }, [graph, layoutKind, layoutSeed]);
 
     const rebuildVisData = useCallback(() => {
         if (!graph) { setVisData({ nodes: [], edges: [] }); return; }
@@ -296,7 +320,7 @@ export default function DijkstraGraphView({
             <VisGraph
                 style={{ height: "100%", width: "100%" }}
                 graph={visData}
-                options={VIS_OPTIONS}
+                options={visOptions}
                 getNetwork={(network: vis.Network) => {
                     networkRef.current = network;
                     // Fit once the very first paint lands — the effect

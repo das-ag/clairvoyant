@@ -1,0 +1,34 @@
+GENERIC
+NODE a
+NODE b
+NODE c
+NODE d
+NODE e
+NODE f
+NODE g
+NODE h
+NODE i
+NODE j
+
+EDGE a b {"w": 4}
+EDGE a c {"w": 2}
+EDGE b c {"w": 7}
+EDGE b d {"w": 5}
+EDGE b e {"w": 1}
+EDGE c b {"w": 1}
+EDGE c f {"w": 3}
+EDGE d g {"w": 2}
+EDGE e d {"w": 3}
+EDGE e g {"w": 1}
+EDGE e h {"w": 6}
+EDGE f e {"w": 2}
+EDGE f h {"w": 4}
+EDGE g i {"w": 3}
+EDGE h g {"w": 1}
+EDGE h i {"w": 5}
+EDGE h j {"w": 2}
+EDGE i j {"w": 1}
+EDGE j a {"w": 10}
+EDGE d f {"w": 8}
+
+START a

@@ -8,6 +8,7 @@ import DebugStepper from "@/app/components/controls/debugStepper";
 import VertexPanel from "@/app/components/controls/vertexPanel";
 import PriorityQueuePanel from "@/app/components/controls/priorityQueuePanel";
 import DijkstraGraphView from "./components/dijkstraGraphView";
+import { LayoutKind, LAYOUT_OPTIONS } from "@/lib/graphs/layouts";
 import { HDivider, VDivider } from "@/app/components/divider";
 import { toast } from "react-toastify";
 import { ensureError } from "@/lib/errors/error";
@@ -45,6 +46,8 @@ export default function SingleSourceShortestPathPage() {
     const [playing, setPlaying] = useState(false);
     const [allowNegativeWeights, setAllowNegativeWeights] = useState(false);
     const [layoutSeed, setLayoutSeed] = useState(1);
+    const [layoutKind, setLayoutKind] = useState<LayoutKind>("cola");
+    const [physicsEnabled, setPhysicsEnabled] = useState(false);
 
     const stepsRef = useRef(steps);
     stepsRef.current = steps;
@@ -277,6 +280,8 @@ export default function SingleSourceShortestPathPage() {
                         currentStep={currentStep}
                         onFitRef={fitRef}
                         layoutSeed={layoutSeed}
+                        layoutKind={layoutKind}
+                        physicsEnabled={physicsEnabled}
                     />
 
                     {/* Top-left: Play/Pause + Fit */}
@@ -291,18 +296,36 @@ export default function SingleSourceShortestPathPage() {
                             </button>
                         )}
                         <button
-                            onClick={() => fitRef.current?.()}
-                            className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
-                        >
-                            Fit
-                        </button>
-                        <button
                             onClick={() => setLayoutSeed(s => s + 1)}
-                            title="Re-run the auto-layout with a different starting configuration"
+                            title="Re-run the auto-layout (Cola cycles seeds; AVSDF/ELK simply recompute)"
                             className="flex items-center px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100"
                         >
                             Re-layout
                         </button>
+                        <select
+                            value={layoutKind}
+                            onChange={e => setLayoutKind(e.target.value as LayoutKind)}
+                            title="Choose the layout algorithm used to seed node positions"
+                            className="px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100 focus:outline-none focus:opacity-100"
+                        >
+                            {LAYOUT_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value} className="bg-primary-950 text-white">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <label
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary-950/80 backdrop-blur-sm border border-secondary-800 text-white text-xs hover:bg-primary-900/90 transition-colors cursor-pointer opacity-70 hover:opacity-100 select-none"
+                            title="Let vis-network's physics relax from the seeded positions so dragging propagates through edges"
+                        >
+                            <input
+                                type="checkbox"
+                                checked={physicsEnabled}
+                                onChange={e => setPhysicsEnabled(e.target.checked)}
+                                className="accent-amber-400"
+                            />
+                            <span>Physics</span>
+                        </label>
                     </div>
 
                     {/* Top-center: Annotation Q&A / explanation */}
