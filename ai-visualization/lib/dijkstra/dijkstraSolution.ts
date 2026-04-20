@@ -94,6 +94,12 @@ export class DijkstraStep {
      * is in progress.
      */
     exploringNodeId?: string;
+    /**
+     * Set only on the step that actually updates d[v]/π[v] inside a relax()
+     * call — drives the transient destination-node glow. Not set for the
+     * init-phase updateDist calls that initialize all distances to ∞/0.
+     */
+    relaxedNodeId?: string;
 
     constructor(
         debugValue: any = null,
@@ -375,11 +381,16 @@ export class DijkstraSolutionBase {
         cmd.execute();
 
         const prevLabel = u ? u.id : "NIL";
-        this._pushStep(
+        const step = this._pushStep(
             `d[${v.id}] = ${newLabel}, π[${v.id}] = ${prevLabel}`,
             cmd, false, line,
             { v, u, newDist },
         );
+        // Only mark as just-relaxed when inside a relax() call — gate on the
+        // active edge so init-phase dist assignments don't glow every node.
+        if (this._activeEdge) {
+            step.relaxedNodeId = v.id;
+        }
     }
 
     /**

@@ -96,7 +96,7 @@ function buildVisOptions(physicsEnabled: boolean): VisGraphOptions {
 // node states remain pairwise distinguishable under deuteranopia/protanopia
 // and so none of them collide with the source's thick white border ring.
 function nodeColor(state: string | undefined, isExtracting: boolean): string {
-    if (isExtracting) return "#D55E00"; // vermilion — being extracted
+    if (isExtracting) return "#B91C1C"; // red-700 — being extracted (distinct from relax orange)
     switch (state) {
         case "settled": return "#009E73"; // teal-green
         case "relaxed": return "#F0E442"; // pure yellow
@@ -113,6 +113,8 @@ const EXPLORING_BORDER = "#22d3ee"; // cyan-400 — distinct from source white a
 const SELECTED_BORDER = "#EC4899"; // pink-500 — user-selected node; chosen to
                                    // avoid clash with fills, cyan exploring,
                                    // white source, and red/green edge glows.
+const RELAXING_BORDER = "#D55E00"; // vermilion — matches the relaxing edge line
+const RELAXED_GLOW = "#F0E442";    // yellow — transient ring when d[v] just updated
 
 // Direction-aware glow for adjacent edges when a node is selected. Rendered as
 // vis-network edge shadows so the base line color stays intact. Saturated pure
@@ -131,6 +133,7 @@ function makeSourceNode(
     id: string,
     fill: string,
     strokeColor: string,
+    isJustRelaxed: boolean,
 ): any {
     const lines = [id, "0", "(Start)"];
     const width = SOURCE_DIAMOND_WIDTH;
@@ -145,6 +148,21 @@ function makeSourceNode(
                 const hw = width / 2;
                 const hh = height / 2;
                 ctx.save();
+                // Outer yellow glow ring when distance just updated. vis-network
+                // doesn't honor `shadow` on shape:"custom", so draw it ourselves.
+                if (isJustRelaxed) {
+                    const ghw = hw * 1.15;
+                    const ghh = hh * 1.15;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - ghh);
+                    ctx.lineTo(x + ghw, y);
+                    ctx.lineTo(x, y + ghh);
+                    ctx.lineTo(x - ghw, y);
+                    ctx.closePath();
+                    ctx.lineWidth = 6;
+                    ctx.strokeStyle = RELAXED_GLOW;
+                    ctx.stroke();
+                }
                 // Rhombus path
                 ctx.beginPath();
                 ctx.moveTo(x, y - hh);
@@ -183,21 +201,37 @@ function getNodeOptions(
     node: GraphNode,
     isExtracting: boolean,
     isExploring: boolean,
+    isRelaxEndpoint: boolean,
     isSelected: boolean,
+    isJustRelaxed: boolean,
 ): NodeOptions {
     const state: string = node.data["state"] ?? "";
     const bg = nodeColor(state, isExtracting);
-    // Selection wins over exploring as the user-driven signal — the
-    // exploring border is a step-driven hint; the pink ring answers
-    // "this is what I clicked."
-    const border = isSelected ? SELECTED_BORDER : isExploring ? EXPLORING_BORDER : "#0b1220";
-    const borderWidth = isSelected || isExploring ? 5 : 2;
+    // Border precedence: user selection (pink) > relax endpoint (orange, matches
+    // edge) > exploring (cyan) > default. Selection is the user-driven signal
+    // so it always wins; orange beats cyan because during the inner relax() we
+    // want u and v to read as a matched pair tied to the orange edge line.
+    const border = isSelected
+        ? SELECTED_BORDER
+        : isRelaxEndpoint
+            ? RELAXING_BORDER
+            : isExploring
+                ? EXPLORING_BORDER
+                : "#0b1220";
+    const borderWidth = isSelected || isRelaxEndpoint || isExploring ? 5 : 2;
+    const highlightBorder = isSelected
+        ? SELECTED_BORDER
+        : isRelaxEndpoint
+            ? RELAXING_BORDER
+            : isExploring
+                ? EXPLORING_BORDER
+                : "#ffffff";
     return {
         label: nodeLabel(node),
         color: {
             background: bg,
             border,
-            highlight: { background: bg, border: isSelected ? SELECTED_BORDER : isExploring ? EXPLORING_BORDER : "#ffffff" },
+            highlight: { background: bg, border: highlightBorder },
         },
         borderWidth,
         shape: "circle",
@@ -206,6 +240,9 @@ function getNodeOptions(
             minimum: NODE_MIN_HEIGHT,
             valign: "middle",
         },
+        shadow: isJustRelaxed
+            ? { enabled: true, color: RELAXED_GLOW, size: 24, x: 0, y: 0 }
+            : { enabled: false },
     } as NodeOptions;
 }
 
@@ -343,24 +380,34 @@ export default function DijkstraGraphView({
         const extractingId = currentStep?.extractingNodeId;
         const exploringId = currentStep?.exploringNodeId;
         const relaxingEdge = currentStep?.relaxingEdge;
+        const relaxedId = currentStep?.relaxedNodeId;
 
         const nodes = graph.getAllNodes().map((node) => {
             const isSource = node.id === sourceId;
             const isExtracting = node.id === extractingId;
             const isExploring = node.id === exploringId;
+            const isRelaxEndpoint =
+                relaxingEdge?.fromId === node.id || relaxingEdge?.toId === node.id;
             const isSelected = node.id === selectedNodeId;
+            const isJustRelaxed = node.id === relaxedId;
             const pos = positions.get(node.id);
             if (isSource) {
                 const state: string = node.data["state"] ?? "";
                 const fill = nodeColor(state, isExtracting);
-                const stroke = isSelected ? SELECTED_BORDER : isExploring ? EXPLORING_BORDER : "#ffffff";
-                return { ...makeSourceNode(node.id, fill, stroke), x: pos?.x, y: pos?.y };
+                const stroke = isSelected
+                    ? SELECTED_BORDER
+                    : isRelaxEndpoint
+                        ? RELAXING_BORDER
+                        : isExploring
+                            ? EXPLORING_BORDER
+                            : "#ffffff";
+                return { ...makeSourceNode(node.id, fill, stroke, isJustRelaxed), x: pos?.x, y: pos?.y };
             }
             return {
                 id: node.id,
                 x: pos?.x,
                 y: pos?.y,
-                ...getNodeOptions(node, isExtracting, isExploring, isSelected),
+                ...getNodeOptions(node, isExtracting, isExploring, isRelaxEndpoint, isSelected, isJustRelaxed),
             };
         });
 
