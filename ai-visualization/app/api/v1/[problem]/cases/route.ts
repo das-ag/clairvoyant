@@ -13,6 +13,7 @@ export async function GET(
   }
   const files = readdirSync(dir)
     .filter(f => f.endsWith('.txt') || f.endsWith('.js'))
-    .map(f => f.replace(/\.(txt|js)$/, ''));
+    .map(f => f.replace(/\.(txt|js)$/, ''))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   return NextResponse.json(files);
 }

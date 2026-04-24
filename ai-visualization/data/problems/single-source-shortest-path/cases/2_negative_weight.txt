@@ -1,0 +1,15 @@
+GENERIC
+
+NODE V1
+NODE V2
+NODE V3
+NODE V4
+NODE V5
+
+EDGE V1 V2 {"w": 2}
+EDGE V1 V3 {"w": 3}
+EDGE V3 V2 {"w": -5}
+EDGE V2 V4 {"w": 1}
+EDGE V4 V5 {"w": 1}
+
+START V1

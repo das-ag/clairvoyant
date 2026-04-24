@@ -47,5 +47,5 @@ export function renderValue(value: any, prefix: string = "", suffix: string = ""
 }
 
 export function formatPrettyFile(filename: string) {
-    return capitalize(filename.replace(/_/g, " ").replace(/\..*$/, ""));
+    return capitalize(filename.replace(/^\d+_/, "").replace(/_/g, " ").replace(/\..*$/, ""));
 }

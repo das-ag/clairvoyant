@@ -46,7 +46,7 @@ export default function SingleSourceShortestPathPage() {
     const [stepIndex, setStepIndex] = useState(0);
     const [renderKey, setRenderKey] = useState(0);
     const [playing, setPlaying] = useState(false);
-    const [allowNegativeWeights, setAllowNegativeWeights] = useState(false);
+    const [allowNegativeWeights, setAllowNegativeWeights] = useState(true);
     const [layoutSeed, setLayoutSeed] = useState(1);
     const [layoutKind, setLayoutKind] = useState<LayoutKind>("cola");
     const [physicsEnabled, setPhysicsEnabled] = useState(false);
